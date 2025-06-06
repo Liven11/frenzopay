@@ -10,6 +10,7 @@ import {
 import * as LocalAuthentication from 'expo-local-authentication';
 import { useRouter } from 'expo-router';
 import { useUser } from '../context/UserContext';
+import { useAuth } from '../context/AuthContext';
 
 const ProfileItem = ({ icon, title, subtitle, onPress, rightElement }) => (
   <TouchableOpacity style={styles.profileItem} onPress={onPress}>
@@ -31,6 +32,7 @@ const SectionHeader = ({ title }) => (
 export default function ProfileScreen() {
   const router = useRouter();
   const { userData } = useUser();
+  const { logout } = useAuth();
   const fullName = `${userData.firstName} ${userData.lastName}`.trim() || 'User';
   const [faceIdEnabled, setFaceIdEnabled] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
@@ -146,10 +148,7 @@ export default function ProfileScreen() {
         {
           text: 'Logout',
           style: 'destructive',
-          onPress: () => {
-            // Handle logout logic here
-            router.replace('/');
-          },
+          onPress: () => logout(),
         },
       ],
     );
