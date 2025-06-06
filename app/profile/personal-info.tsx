@@ -3,21 +3,21 @@ import { StyleSheet, View, Text, TextInput, TouchableOpacity, ScrollView, Alert 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, Camera } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
+import { useUser } from '../context/UserContext';
 
 export default function PersonalInfoScreen() {
   const router = useRouter();
-  const [formData, setFormData] = useState({
-    firstName: 'John',
-    lastName: 'Doe',
-    email: 'john.doe@example.com',
-    phone: '+1 234 567 8900',
-    address: '123 Main St, City, Country',
-  });
+  const { userData, updateUserData } = useUser();
+  const [formData, setFormData] = useState(userData);
 
-  const handleSave = () => {
-    // Here you would typically save the data to your backend
-    Alert.alert('Success', 'Profile updated successfully');
-    router.back();
+  const handleSave = async () => {
+    try {
+      await updateUserData(formData);
+      Alert.alert('Success', 'Profile updated successfully');
+      router.back();
+    } catch (error) {
+      Alert.alert('Error', 'Failed to update profile');
+    }
   };
 
   return (

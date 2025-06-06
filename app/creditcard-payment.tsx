@@ -10,21 +10,44 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, Tv, DollarSign } from 'lucide-react-native';
+import { ArrowLeft, DollarSign, FileText } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 
-export default function DthPaymentsScreen() {
+interface BillDetails {
+  consumerNumber: string;
+  amount: string;
+  dueDate: string;
+}
+
+export default function CreditCardBillPaymentScreen() {
   const router = useRouter();
 
-  const [subscriberId, setSubscriberId] = useState('');
-  const [dthAmount, setDthAmount] = useState('');
+  const [consumerNumber, setConsumerNumber] = useState('');
+  const [billAmount, setBillAmount] = useState('');
   const [upiPin, setUpiPin] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPinInput, setShowPinInput] = useState(false);
+  const [fetchedBill, setFetchedBill] = useState<BillDetails | null>(null);
+
+  const handleFetchBill = () => {
+    if (!consumerNumber) {
+      Alert.alert('Missing Information', 'Please enter the consumer number.');
+      return;
+    }
+    // Simulate fetching bill details
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+      // Simulate a fetched bill amount and details
+      const simulatedBillAmount = (Math.random() * 1000 + 500).toFixed(2);
+      setBillAmount(simulatedBillAmount);
+      setFetchedBill({ consumerNumber, amount: simulatedBillAmount, dueDate: '25th of next month' });
+    }, 1500);
+  };
 
   const handleContinue = () => {
-    if (!subscriberId || !dthAmount || isNaN(Number(dthAmount)) || Number(dthAmount) <= 0) {
-      Alert.alert('Invalid Details', 'Please enter a valid subscriber ID and amount.');
+    if (!billAmount || isNaN(Number(billAmount)) || Number(billAmount) <= 0) {
+      Alert.alert('Invalid Amount', 'Please enter a valid bill amount.');
       return;
     }
     setShowPinInput(true);
@@ -42,18 +65,18 @@ export default function DthPaymentsScreen() {
       await new Promise(resolve => setTimeout(resolve, 2000));
 
       // Simulate success or failure
-      const isSuccess = Math.random() > 0.5; // 50% chance of success
+      const isSuccess = Math.random() > 0.3; // 70% chance of success
 
       if (isSuccess) {
         router.push({
           pathname: '/transaction-success',
-          params: { amount: dthAmount, recipient: `DTH ID: ${subscriberId}`, description: 'DTH Payment' },
+          params: { amount: billAmount, recipient: 'Credit Card Bill' },
         });
       } else {
-        const simulatedError = new Error("DTH operator error"); // Replace with actual error details
+        const simulatedError = new Error("Payment gateway error"); // Replace with actual error details
         router.push({
           pathname: '/transaction-failure',
-        params: { message: simulatedError.message },
+          params: { message: simulatedError.message },
         });
       }
 
@@ -80,38 +103,49 @@ export default function DthPaymentsScreen() {
         >
           <ArrowLeft size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.title}>DTH Payments</Text>
+        <Text style={styles.title}>Credit Card Bill Payment</Text>
       </View>
       <ScrollView style={styles.content}>
         {!showPinInput ? (
           <View>
-            <Text style={styles.sectionTitle}>Enter DTH Details</Text>
+            <Text style={styles.sectionTitle}>Enter Details</Text>
             <TextInput
               style={styles.input}
-              placeholder="Subscriber ID"
-              keyboardType="default"
-              value={subscriberId}
-              onChangeText={setSubscriberId}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Amount"
-              keyboardType="numeric"
-              value={dthAmount}
-              onChangeText={setDthAmount}
+              placeholder="Card Number"
+              keyboardType="number-pad"
+              value={consumerNumber}
+              onChangeText={setConsumerNumber}
             />
 
-            <TouchableOpacity
-              style={styles.continueButton}
-              onPress={handleContinue}
-            >
-              <Text style={styles.continueButtonText}>Continue</Text>
-            </TouchableOpacity>
+            {!fetchedBill ? (
+              <TouchableOpacity
+                style={styles.fetchBillButton}
+                onPress={handleFetchBill}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.fetchBillButtonText}>Fetch Bill</Text>
+                )}
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.billDetailsContainer}>
+                <Text style={styles.billDetailsText}>Bill Amount: ₹{fetchedBill.amount}</Text>
+                <Text style={styles.billDetailsText}>Due Date: {fetchedBill.dueDate}</Text>
+                 <TouchableOpacity
+                   style={styles.continueButton}
+                   onPress={handleContinue}
+                 >
+                   <Text style={styles.continueButtonText}>Continue to Pay</Text>
+                 </TouchableOpacity>
+              </View>
+            )}
           </View>
         ) : (
            <View style={styles.pinContainer}>
               <Text style={styles.pinLabel}>Enter UPI PIN to Pay</Text>
-              <Text style={styles.paymentAmountText}>Paying: ₹{dthAmount} for DTH ID {subscriberId}</Text>
+              <Text style={styles.paymentAmountText}>Paying: ₹{billAmount}</Text>
               <TextInput
                 style={styles.pinInput}
                 placeholder="Enter 6-digit PIN"
@@ -129,10 +163,10 @@ export default function DthPaymentsScreen() {
                 {loading ? (
                   <ActivityIndicator color="#fff" />
                 ) : (
-                  <Text style={styles.payButtonText}>Pay ₹{dthAmount}</Text>
+                  <Text style={styles.payButtonText}>Pay ₹{billAmount}</Text>
                 )}
               </TouchableOpacity>
-               <TouchableOpacity
+              <TouchableOpacity
                  style={styles.cancelButton}
                  onPress={() => setShowPinInput(false)}
                  disabled={loading}
@@ -183,7 +217,30 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 12,
   },
-  continueButton: {
+  fetchBillButton: {
+    backgroundColor: '#172e73',
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  fetchBillButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  billDetailsContainer: {
+    marginTop: 20,
+    padding: 16,
+    backgroundColor: '#f8f8f8',
+    borderRadius: 12,
+  },
+  billDetailsText: {
+    fontSize: 16,
+    marginBottom: 8,
+    color: '#333',
+  },
+   continueButton: {
     backgroundColor: '#172e73',
     padding: 16,
     borderRadius: 12,

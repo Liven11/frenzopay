@@ -1,7 +1,10 @@
 import React from 'react';
 import { StyleSheet, View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { CreditCard, ArrowDownLeft, ArrowUpRight } from 'lucide-react-native';
+import { CreditCard, ArrowDownLeft, ArrowUpRight, ArrowLeft } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
+
+const router = useRouter();
 
 const TransactionItem = ({ type, amount, date, category }) => (
   <View style={styles.transactionItem}>
@@ -15,7 +18,7 @@ const TransactionItem = ({ type, amount, date, category }) => (
       <Text style={styles.transactionCategory}>{category}</Text>
       <Text style={styles.transactionDate}>{date}</Text>
     </View>
-    <Text style={[styles.amount, { color: type === 'credit' ? '#17C261' : '#DB0011' }]}>
+    <Text style={[styles.transactionAmount, { color: type === 'credit' ? '#17C261' : '#DB0011' }]}>
       {type === 'credit' ? '+' : '-'}₹{amount}
     </Text>
   </View>
@@ -32,6 +35,12 @@ export default function WalletScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
+          <ArrowLeft size={24} color="#172e73" />
+        </TouchableOpacity>
         <Text style={styles.headerTitle}>Wallet</Text>
       </View>
 
@@ -69,13 +78,19 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   header: {
-    padding: 20,
-    backgroundColor: '#172e73',
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  backButton: {
+    marginRight: 16,
   },
   headerTitle: {
-    fontSize: 24,
-    color: '#fff',
+    fontSize: 20,
     fontFamily: 'Inter-Bold',
+    color: '#172e73',
   },
   content: {
     flex: 1,
@@ -139,6 +154,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontFamily: 'Inter-Bold',
     marginBottom: 15,
+    color: '#172e73',
   },
   transactionItem: {
     flexDirection: 'row',
@@ -166,15 +182,16 @@ const styles = StyleSheet.create({
   },
   transactionCategory: {
     fontSize: 16,
-    fontFamily: 'Inter-Regular',
+    fontFamily: 'Inter-Bold',
+    color: '#333',
   },
   transactionDate: {
     fontSize: 14,
-    color: '#666',
     fontFamily: 'Inter-Regular',
+    color: '#666',
     marginTop: 2,
   },
-  amount: {
+  transactionAmount: {
     fontSize: 16,
     fontFamily: 'Inter-Bold',
   },

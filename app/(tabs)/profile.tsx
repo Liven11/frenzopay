@@ -9,6 +9,7 @@ import {
 } from 'lucide-react-native';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { useRouter } from 'expo-router';
+import { useUser } from '../context/UserContext';
 
 const ProfileItem = ({ icon, title, subtitle, onPress, rightElement }) => (
   <TouchableOpacity style={styles.profileItem} onPress={onPress}>
@@ -29,6 +30,8 @@ const SectionHeader = ({ title }) => (
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const { userData } = useUser();
+  const fullName = `${userData.firstName} ${userData.lastName}`.trim() || 'User';
   const [faceIdEnabled, setFaceIdEnabled] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [darkModeEnabled, setDarkModeEnabled] = useState(false);
@@ -165,11 +168,11 @@ export default function ProfileScreen() {
           <View style={styles.avatarContainer}>
             <User size={40} color="#172e73" />
           </View>
-          <Text style={styles.name}>John Doe</Text>
-          <Text style={styles.email}>john.doe@example.com</Text>
+          <Text style={styles.name}>{fullName}</Text>
+          <Text style={styles.email}>{userData.email}</Text>
           <TouchableOpacity 
             style={styles.editButton}
-            onPress={() => router.push('/profile//personal-info')}
+            onPress={() => router.push('/profile/personal-info')}
           >
             <Text style={styles.editButtonText}>Edit Profile</Text>
           </TouchableOpacity>

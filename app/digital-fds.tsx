@@ -43,7 +43,7 @@ export default function DigitalFdsScreen() {
       await new Promise(resolve => setTimeout(resolve, 2000));
 
       // Simulate success or failure
-      const isSuccess = Math.random() > 0.7; // 70% chance of success for investment
+      const isSuccess = Math.random() > 1.0; // 70% chance of success for investment
 
       if (isSuccess) {
         router.push({

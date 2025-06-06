@@ -5,6 +5,7 @@ import { RefreshCw, Star, Bell, Calculator, Send, QrCode, Upload, Zap, CreditCar
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Link, useRouter, useFocusEffect } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
+import { useUser } from '../context/UserContext';
 
 // Define the type for a transaction item
 interface Transaction {
@@ -60,6 +61,8 @@ const OfferCard = ({ title, description, color, illustration, onPress }) => (
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { userData } = useUser();
+  const fullName = `${userData.firstName} ${userData.lastName}`.trim() || 'User';
   const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
   const [loadingTransactions, setLoadingTransactions] = useState(true);
 
@@ -232,14 +235,20 @@ export default function HomeScreen() {
           <TouchableOpacity onPress={() => router.push('/profile/personal-info')}>
             <View style={styles.welcomeInfo}>
               <Text style={styles.welcomeText}>Welcome Back!</Text>
-              <Text style={styles.userName}>Richa Anand</Text>
+              <Text style={styles.userName}>{fullName}</Text>
             </View>
           </TouchableOpacity>
           <View style={styles.headerIcons}>
-            <TouchableOpacity style={styles.iconButton}>
+            <TouchableOpacity 
+              style={styles.iconButton}
+              onPress={() => router.push('/search')}
+            >
               <Search size={24} color="white" />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.iconButton}>
+            <TouchableOpacity 
+              style={styles.iconButton}
+              onPress={() => router.push('/notifications')}
+            >
               <Bell size={24} color="white" />
             </TouchableOpacity>
           </View>
@@ -255,7 +264,7 @@ export default function HomeScreen() {
             <Text style={styles.promoGreeting}>Hello from FrenzoPay!</Text>
             <Text style={styles.promoTitle}>Pay Credit Card Bills</Text>
             <Text style={styles.promoTitle}>& Get Instant Cashback!</Text>
-            <TouchableOpacity style={styles.payNowButton}>
+            <TouchableOpacity style={styles.payNowButton} onPress={() => router.push('/creditcard-payment')}>
               <Text style={styles.payNowText}>Pay Now</Text>
             </TouchableOpacity>
           </View>
