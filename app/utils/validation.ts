@@ -125,3 +125,118 @@ export function validateCreditCardPayment(
     cardType,
   };
 }
+
+// Bank Account Validation
+export function validateBankAccount(accountNumber: string, ifscCode: string): { isValid: boolean; errors: { accountNumber?: string; ifscCode?: string } } {
+  const errors: { accountNumber?: string; ifscCode?: string } = {};
+  let isValid = true;
+
+  // Account Number Validation (9-18 digits)
+  if (!accountNumber) {
+    errors.accountNumber = 'Account number is required';
+    isValid = false;
+  } else if (!/^\d{9,18}$/.test(accountNumber)) {
+    errors.accountNumber = 'Account number must be 9-18 digits';
+    isValid = false;
+  }
+
+  // IFSC Code Validation (11 characters: 4 letters + 7 alphanumeric)
+  if (!ifscCode) {
+    errors.ifscCode = 'IFSC code is required';
+    isValid = false;
+  } else if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifscCode.toUpperCase())) {
+    errors.ifscCode = 'Invalid IFSC code format';
+    isValid = false;
+  }
+
+  return { isValid, errors };
+}
+
+// Electricity Consumer Number Validation
+export function validateConsumerNumber(consumerNumber: string): { isValid: boolean; error?: string } {
+  if (!consumerNumber) {
+    return { isValid: false, error: 'Consumer number is required' };
+  }
+  
+  // Most electricity boards use 6-12 digit consumer numbers
+  if (!/^\d{6,12}$/.test(consumerNumber)) {
+    return { isValid: false, error: 'Consumer number must be 6-12 digits' };
+  }
+
+  return { isValid: true };
+}
+
+// Vehicle Number Validation (Indian format)
+export function validateVehicleNumber(vehicleNumber: string): { isValid: boolean; error?: string } {
+  if (!vehicleNumber) {
+    return { isValid: false, error: 'Vehicle number is required' };
+  }
+
+  // Indian vehicle number format: AA11AA1111 or AA11A1111
+  const pattern = /^[A-Z]{2}[0-9]{2}[A-Z]{1,2}[0-9]{4}$/;
+  if (!pattern.test(vehicleNumber.toUpperCase())) {
+    return { isValid: false, error: 'Invalid vehicle number format' };
+  }
+
+  return { isValid: true };
+}
+
+// DTH Subscriber ID Validation
+export function validateDthSubscriberId(subscriberId: string): { isValid: boolean; error?: string } {
+  if (!subscriberId) {
+    return { isValid: false, error: 'Subscriber ID is required' };
+  }
+
+  // DTH subscriber IDs are typically 10-12 digits
+  if (!/^\d{10,12}$/.test(subscriberId)) {
+    return { isValid: false, error: 'Subscriber ID must be 10-12 digits' };
+  }
+
+  return { isValid: true };
+}
+
+// Mobile Number Validation
+export function validateMobileNumber(mobileNumber: string): { isValid: boolean; error?: string } {
+  if (!mobileNumber) {
+    return { isValid: false, error: 'Mobile number is required' };
+  }
+
+  // Indian mobile number format: 10 digits starting with 6-9
+  if (!/^[6-9]\d{9}$/.test(mobileNumber)) {
+    return { isValid: false, error: 'Invalid mobile number format' };
+  }
+
+  return { isValid: true };
+}
+
+// Amount Validation
+export function validateAmount(amount: string): { isValid: boolean; error?: string } {
+  if (!amount) {
+    return { isValid: false, error: 'Amount is required' };
+  }
+
+  const numAmount = parseFloat(amount);
+  if (isNaN(numAmount)) {
+    return { isValid: false, error: 'Invalid amount' };
+  }
+
+  if (numAmount <= 0) {
+    return { isValid: false, error: 'Amount must be greater than 0' };
+  }
+
+  if (numAmount > 100000) {
+    return { isValid: false, error: 'Amount cannot exceed ₹100,000' };
+  }
+
+  return { isValid: true };
+}
+
+//  default export
+export default {
+  validateBankAccount,
+  validateConsumerNumber,
+  validateVehicleNumber,
+  validateDthSubscriber: validateDthSubscriberId,
+  validateMobileNumber,
+  validateAmount,
+};

@@ -53,4 +53,10 @@ export function useTransactions() {
     throw new Error('useTransactions must be used within a TransactionProvider');
   }
   return context;
-} 
+}
+
+export default function RecentTransactions() {
+  const { getRecentTransactions } = useTransactions();
+  const recentTransactions = getRecentTransactions();
+  // ... displays all transactions
+}

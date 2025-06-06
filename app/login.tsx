@@ -1,12 +1,50 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Image, KeyboardAvoidingView, Platform } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Phone } from 'lucide-react-native';
+import { securityManager } from './utils/security';
+import { SecurityAlert } from './components/SecurityAlert';
 
 export default function LoginScreen() {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [isValid, setIsValid] = useState(true);
+  const [showDeviceAlert, setShowDeviceAlert] = useState(false);
+  const [showAppAlert, setShowAppAlert] = useState(false);
+
+  useEffect(() => {
+    const checkSecurity = async () => {
+      // Check device security
+      const isDeviceSecure = await securityManager.checkDeviceSecurity();
+      if (!isDeviceSecure) {
+        setShowDeviceAlert(true);
+        // Auto close app after 3 seconds
+        setTimeout(() => {
+          // On Android, use BackHandler.exitApp()
+          // On iOS,  show the alert
+          if (Platform.OS === 'android') {
+            router.replace('/');
+          }
+        }, 3000);
+        return;
+      }
+
+      // Check app tampering
+      const isAppSecure = await securityManager.checkAppTampering();
+      if (!isAppSecure) {
+        setShowAppAlert(true);
+        // Auto close app after 3 seconds
+        setTimeout(() => {
+          if (Platform.OS === 'android') {
+            router.replace('/');
+          }
+        }, 3000);
+        return;
+      }
+    };
+
+    checkSecurity();
+  }, []);
 
   const validatePhoneNumber = (number: string) => {
     const phoneRegex = /^\d{10}$/;
@@ -87,6 +125,30 @@ export default function LoginScreen() {
           </View>
         </View>
       </KeyboardAvoidingView>
+
+      <SecurityAlert
+        visible={showDeviceAlert}
+        title="Security Warning"
+        message="This device appears to be compromised (rooted/jailbroken). The app will close for security reasons."
+        onClose={() => {
+          setShowDeviceAlert(false);
+          if (Platform.OS === 'android') {
+            router.replace('/');
+          }
+        }}
+      />
+
+      <SecurityAlert
+        visible={showAppAlert}
+        title="App Security Warning"
+        message="The app's integrity has been compromised. The app will close for security reasons."
+        onClose={() => {
+          setShowAppAlert(false);
+          if (Platform.OS === 'android') {
+            router.replace('/');
+          }
+        }}
+      />
     </SafeAreaView>
   );
 }

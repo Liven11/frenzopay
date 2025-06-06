@@ -191,13 +191,13 @@ export default function HomeScreen() {
               style={styles.iconButton}
               onPress={() => router.push('/search')}
             >
-              <Search size={24} color="white" />
+              <Search size={24} color="#172e73" />
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.iconButton}
               onPress={() => router.push('/notifications')}
             >
-              <Bell size={24} color="white" />
+              <Bell size={24} color="#172e73" />
             </TouchableOpacity>
           </View>
         </View>
@@ -290,11 +290,19 @@ const styles = StyleSheet.create({
     backgroundColor: '#f4f7f6',
   },
   header: {
-    backgroundColor: '#172e73',
+    backgroundColor: '#f8f9fa',
     padding: 15,
     paddingBottom: 80,
     borderBottomLeftRadius: 30,
     borderBottomRightRadius: 30,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   headerTop: {
     flexDirection: 'row',
@@ -306,10 +314,10 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'white',
+    backgroundColor: '#f8f9fa',
     overflow: 'hidden',
     borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.3)',
+    borderColor: 'rgba(23,46,115,0.1)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -323,12 +331,12 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
   welcomeText: {
-    color: 'rgba(255,255,255,0.7)',
+    color: '#666666',
     fontSize: 14,
     fontFamily: 'Inter-Regular',
   },
   userName: {
-    color: 'white',
+    color: '#172e73',
     fontSize: 18,
     fontFamily: 'Inter-Bold',
   },
@@ -340,29 +348,23 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: '#f8f9fa',
     justifyContent: 'center',
     alignItems: 'center',
   },
   logoSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     marginTop: 20,
-    backgroundColor: 'white',
+    backgroundColor: '#f8f9fa',
     borderRadius: 10,
     padding: 10,
-    alignSelf: 'center',
-  },
-  logoText: {
-    color: 'white',
-    fontSize: 24,
-    fontFamily: 'Inter-Bold',
-    marginRight: 10,
+    marginLeft: 15,
   },
   logoImage: {
-    width: 120,
-    height: 30,
+    width: 140,
+    height: 50,
     resizeMode: 'contain',
   },
   logoImagePlaceholder: {

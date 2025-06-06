@@ -37,7 +37,7 @@ export default function WalletScreen() {
           </View>
         </View>
 
-        <RecentTransactions />
+        <RecentTransactions nested={true} />
       </ScrollView>
     </SafeAreaView>
   );

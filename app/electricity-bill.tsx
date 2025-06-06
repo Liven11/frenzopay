@@ -10,46 +10,36 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, DollarSign, FileText } from 'lucide-react-native';
+import { ArrowLeft } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
-
-interface BillDetails {
-  consumerNumber: string;
-  amount: string;
-  dueDate: string;
-}
+import { validateConsumerNumber, validateAmount } from './utils/validation';
 
 export default function ElectricityBillScreen() {
   const router = useRouter();
-
   const [consumerNumber, setConsumerNumber] = useState('');
   const [billAmount, setBillAmount] = useState('');
   const [upiPin, setUpiPin] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPinInput, setShowPinInput] = useState(false);
-  const [fetchedBill, setFetchedBill] = useState<BillDetails | null>(null);
-
-  const handleFetchBill = () => {
-    if (!consumerNumber) {
-      Alert.alert('Missing Information', 'Please enter the consumer number.');
-      return;
-    }
-    // Simulate fetching bill details
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      // Simulate a fetched bill amount and details
-      const simulatedBillAmount = (Math.random() * 1000 + 500).toFixed(2);
-      setBillAmount(simulatedBillAmount);
-      setFetchedBill({ consumerNumber, amount: simulatedBillAmount, dueDate: '25th of next month' });
-    }, 1500);
-  };
+  const [errors, setErrors] = useState<{
+    consumerNumber?: string;
+    amount?: string;
+  }>({});
 
   const handleContinue = () => {
-    if (!billAmount || isNaN(Number(billAmount)) || Number(billAmount) <= 0) {
-      Alert.alert('Invalid Amount', 'Please enter a valid bill amount.');
+    // Validate consumer number and amount
+    const consumerValidation = validateConsumerNumber(consumerNumber);
+    const amountValidation = validateAmount(billAmount);
+
+    if (!consumerValidation.isValid || !amountValidation.isValid) {
+      setErrors({
+        consumerNumber: consumerValidation.error,
+        amount: amountValidation.error,
+      });
       return;
     }
+
+    setErrors({});
     setShowPinInput(true);
   };
 
@@ -89,7 +79,6 @@ export default function ElectricityBillScreen() {
           },
         });
       }
-
     } catch (error) {
       console.error('Payment error:', error);
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
@@ -114,82 +103,95 @@ export default function ElectricityBillScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity
-          style={styles.backButton}
           onPress={() => router.back()}
+          style={styles.backButton}
         >
-          <ArrowLeft size={24} color="#000" />
+          <ArrowLeft size={24} color="#172e73" />
         </TouchableOpacity>
-        <Text style={styles.title}>Electricity Bill Payment</Text>
+        <Text style={styles.title}>Electricity Bill</Text>
       </View>
+
       <ScrollView style={styles.content}>
         {!showPinInput ? (
-          <View>
-            <Text style={styles.sectionTitle}>Enter Details</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Consumer Number"
-              keyboardType="number-pad"
-              value={consumerNumber}
-              onChangeText={setConsumerNumber}
-            />
-
-            {!fetchedBill ? (
-              <TouchableOpacity
-                style={styles.fetchBillButton}
-                onPress={handleFetchBill}
-                disabled={loading}
-              >
-                {loading ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={styles.fetchBillButtonText}>Fetch Bill</Text>
-                )}
-              </TouchableOpacity>
-            ) : (
-              <View style={styles.billDetailsContainer}>
-                <Text style={styles.billDetailsText}>Bill Amount: ₹{fetchedBill.amount}</Text>
-                <Text style={styles.billDetailsText}>Due Date: {fetchedBill.dueDate}</Text>
-                 <TouchableOpacity
-                   style={styles.continueButton}
-                   onPress={handleContinue}
-                 >
-                   <Text style={styles.continueButtonText}>Continue to Pay</Text>
-                 </TouchableOpacity>
-              </View>
-            )}
-          </View>
-        ) : (
-           <View style={styles.pinContainer}>
-              <Text style={styles.pinLabel}>Enter UPI PIN to Pay</Text>
-              <Text style={styles.paymentAmountText}>Paying: ₹{billAmount}</Text>
+          <>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Consumer Number</Text>
               <TextInput
-                style={styles.pinInput}
-                placeholder="Enter 6-digit PIN"
+                style={[styles.input, errors.consumerNumber && styles.inputError]}
+                placeholder="Enter consumer number"
+                value={consumerNumber}
+                onChangeText={(text) => {
+                  setConsumerNumber(text.replace(/\D/g, ''));
+                  if (errors.consumerNumber) {
+                    setErrors(prev => ({ ...prev, consumerNumber: undefined }));
+                  }
+                }}
                 keyboardType="numeric"
-                maxLength={6}
-                secureTextEntry
-                value={upiPin}
-                onChangeText={setUpiPin}
+                maxLength={12}
               />
-              <TouchableOpacity
-                style={styles.payButton}
-                onPress={handlePayment}
-                disabled={loading}
-              >
-                {loading ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={styles.payButtonText}>Pay ₹{billAmount}</Text>
-                )}
-              </TouchableOpacity>
-              <TouchableOpacity
-                 style={styles.cancelButton}
-                 onPress={() => setShowPinInput(false)}
-                 disabled={loading}
-              >
-                 <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
+              {errors.consumerNumber && (
+                <Text style={styles.errorText}>{errors.consumerNumber}</Text>
+              )}
             </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Bill Amount (₹)</Text>
+              <TextInput
+                style={[styles.input, errors.amount && styles.inputError]}
+                placeholder="Enter bill amount"
+                value={billAmount}
+                onChangeText={(text) => {
+                  setBillAmount(text.replace(/[^0-9.]/g, ''));
+                  if (errors.amount) {
+                    setErrors(prev => ({ ...prev, amount: undefined }));
+                  }
+                }}
+                keyboardType="decimal-pad"
+              />
+              {errors.amount && (
+                <Text style={styles.errorText}>{errors.amount}</Text>
+              )}
+            </View>
+
+            <TouchableOpacity
+              style={styles.continueButton}
+              onPress={handleContinue}
+            >
+              <Text style={styles.continueButtonText}>Continue</Text>
+            </TouchableOpacity>
+          </>
+        ) : (
+          <View style={styles.pinContainer}>
+            <Text style={styles.pinLabel}>Enter UPI PIN to Pay</Text>
+            <Text style={styles.paymentAmountText}>Paying: ₹{billAmount}</Text>
+            <TextInput
+              style={styles.pinInput}
+              placeholder="Enter 6-digit PIN"
+              keyboardType="numeric"
+              maxLength={6}
+              secureTextEntry
+              value={upiPin}
+              onChangeText={setUpiPin}
+            />
+            <TouchableOpacity
+              style={styles.payButton}
+              onPress={handlePayment}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.payButtonText}>Pay ₹{billAmount}</Text>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={() => setShowPinInput(false)}
+              disabled={loading}
+            >
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
         )}
       </ScrollView>
     </SafeAreaView>
@@ -213,17 +215,21 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 20,
-    fontWeight: '600',
+    fontFamily: 'Inter-Bold',
+    color: '#172e73',
   },
   content: {
     flex: 1,
     padding: 16,
   },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 12,
-    color: '#333',
+  inputGroup: {
+    marginBottom: 16,
+  },
+  label: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    color: '#666',
+    marginBottom: 8,
   },
   input: {
     borderWidth: 1,
@@ -231,32 +237,18 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
-    marginBottom: 12,
+    fontFamily: 'Inter-Regular',
   },
-  fetchBillButton: {
-    backgroundColor: '#172e73',
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginTop: 12,
+  inputError: {
+    borderColor: '#DB0011',
   },
-  fetchBillButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+  errorText: {
+    color: '#DB0011',
+    fontSize: 12,
+    fontFamily: 'Inter-Regular',
+    marginTop: 4,
   },
-  billDetailsContainer: {
-    marginTop: 20,
-    padding: 16,
-    backgroundColor: '#f8f8f8',
-    borderRadius: 12,
-  },
-  billDetailsText: {
-    fontSize: 16,
-    marginBottom: 8,
-    color: '#333',
-  },
-   continueButton: {
+  continueButton: {
     backgroundColor: '#172e73',
     padding: 16,
     borderRadius: 12,
@@ -266,7 +258,7 @@ const styles = StyleSheet.create({
   continueButtonText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Inter-Bold',
   },
   pinContainer: {
     marginTop: 24,
@@ -274,13 +266,13 @@ const styles = StyleSheet.create({
   },
   pinLabel: {
     fontSize: 16,
-    fontWeight: '500',
+    fontFamily: 'Inter-Medium',
     marginBottom: 8,
     color: '#333',
   },
   paymentAmountText: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: 'Inter-Bold',
     marginBottom: 20,
     color: '#172e73',
   },
@@ -305,7 +297,7 @@ const styles = StyleSheet.create({
   payButtonText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Inter-Bold',
   },
   cancelButton: {
     backgroundColor: '#e0e0e0',
@@ -317,6 +309,6 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     color: '#333',
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Inter-Bold',
   },
 }); 

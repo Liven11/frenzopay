@@ -10,12 +10,12 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, Banknote, User, DollarSign } from 'lucide-react-native';
+import { ArrowLeft } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
+import { validateBankAccount, validateAmount } from './utils/validation';
 
 export default function ToBankAccountScreen() {
   const router = useRouter();
-
   const [accountNumber, setAccountNumber] = useState('');
   const [ifscCode, setIfscCode] = useState('');
   const [accountHolderName, setAccountHolderName] = useState('');
@@ -23,13 +23,35 @@ export default function ToBankAccountScreen() {
   const [upiPin, setUpiPin] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPinInput, setShowPinInput] = useState(false);
+  const [errors, setErrors] = useState<{
+    accountNumber?: string;
+    ifscCode?: string;
+    amount?: string;
+    accountHolderName?: string;
+  }>({});
 
   const handleContinue = () => {
-    if (!accountNumber || !ifscCode || !accountHolderName || !amount || isNaN(Number(amount)) || Number(amount) <= 0) {
-      Alert.alert('Invalid Details', 'Please fill in all bank details and a valid amount.');
+    // Validate bank account details
+    const bankValidation = validateBankAccount(accountNumber, ifscCode);
+    const amountValidation = validateAmount(amount);
+
+    if (!bankValidation.isValid || !amountValidation.isValid) {
+      setErrors({
+        ...bankValidation.errors,
+        amount: amountValidation.error,
+      });
       return;
     }
-    // Basic validation, could add more robust validation for IFSC/account number
+
+    if (!accountHolderName.trim()) {
+      setErrors({
+        ...errors,
+        accountHolderName: 'Account holder name is required',
+      });
+      return;
+    }
+
+    setErrors({});
     setShowPinInput(true);
   };
 
@@ -44,8 +66,8 @@ export default function ToBankAccountScreen() {
       // Simulate payment processing
       await new Promise(resolve => setTimeout(resolve, 2000));
 
-      // Simulate success or failure (replace with actual payment logic)
-      const isSuccess = Math.random() > 0.5; // 50% chance of success
+      // Simulate success or failure
+      const isSuccess = Math.random() > 0.5;
 
       if (isSuccess) {
         router.push({
@@ -53,7 +75,7 @@ export default function ToBankAccountScreen() {
           params: {
             type: 'transfer',
             amount: amount,
-            recipient: accountHolderName || accountNumber,
+            recipient: accountHolderName,
             description: `Bank transfer to ${ifscCode}`,
           },
         });
@@ -63,13 +85,12 @@ export default function ToBankAccountScreen() {
           params: {
             type: 'transfer',
             amount: amount,
-            recipient: accountHolderName || accountNumber,
+            recipient: accountHolderName,
             description: `Bank transfer to ${ifscCode}`,
             error: 'Bank server unresponsive',
           },
         });
       }
-
     } catch (error) {
       console.error('Payment error:', error);
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
@@ -78,7 +99,7 @@ export default function ToBankAccountScreen() {
         params: {
           type: 'transfer',
           amount: amount,
-          recipient: accountHolderName || accountNumber,
+          recipient: accountHolderName,
           description: `Bank transfer to ${ifscCode}`,
           error: errorMessage,
         },
@@ -94,48 +115,93 @@ export default function ToBankAccountScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity
-          style={styles.backButton}
           onPress={() => router.back()}
+          style={styles.backButton}
         >
-          <ArrowLeft size={24} color="#000" />
+          <ArrowLeft size={24} color="#172e73" />
         </TouchableOpacity>
-        <Text style={styles.title}>Send to Bank Account</Text>
+        <Text style={styles.title}>Bank Transfer</Text>
       </View>
+
       <ScrollView style={styles.content}>
         {!showPinInput ? (
-          <View>
-            <Text style={styles.sectionTitle}>Recipient Bank Details</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Account Number"
-              keyboardType="numeric"
-              value={accountNumber}
-              onChangeText={setAccountNumber}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="IFSC Code"
-              autoCapitalize="characters"
-              value={ifscCode}
-              onChangeText={setIfscCode}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Account Holder Name"
-              value={accountHolderName}
-              onChangeText={setAccountHolderName}
-            />
-
-            <Text style={[styles.sectionTitle, { marginTop: 20 }]}>Amount</Text>
-            <View style={styles.amountInputContainer}>
-              <Text style={styles.currencySymbol}>₹</Text>
+          <>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Account Number</Text>
               <TextInput
-                style={styles.amountInput}
-                placeholder="0"
+                style={[styles.input, errors.accountNumber && styles.inputError]}
+                placeholder="Enter account number"
+                value={accountNumber}
+                onChangeText={(text) => {
+                  setAccountNumber(text.replace(/\D/g, ''));
+                  if (errors.accountNumber) {
+                    setErrors(prev => ({ ...prev, accountNumber: undefined }));
+                  }
+                }}
                 keyboardType="numeric"
-                value={amount}
-                onChangeText={setAmount}
+                maxLength={18}
               />
+              {errors.accountNumber && (
+                <Text style={styles.errorText}>{errors.accountNumber}</Text>
+              )}
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>IFSC Code</Text>
+              <TextInput
+                style={[styles.input, errors.ifscCode && styles.inputError]}
+                placeholder="Enter IFSC code"
+                value={ifscCode}
+                onChangeText={(text) => {
+                  setIfscCode(text.toUpperCase());
+                  if (errors.ifscCode) {
+                    setErrors(prev => ({ ...prev, ifscCode: undefined }));
+                  }
+                }}
+                autoCapitalize="characters"
+                maxLength={11}
+              />
+              {errors.ifscCode && (
+                <Text style={styles.errorText}>{errors.ifscCode}</Text>
+              )}
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Account Holder Name</Text>
+              <TextInput
+                style={[styles.input, errors.accountHolderName && styles.inputError]}
+                placeholder="Enter account holder name"
+                value={accountHolderName}
+                onChangeText={(text) => {
+                  setAccountHolderName(text);
+                  if (errors.accountHolderName) {
+                    setErrors(prev => ({ ...prev, accountHolderName: undefined }));
+                  }
+                }}
+                autoCapitalize="words"
+              />
+              {errors.accountHolderName && (
+                <Text style={styles.errorText}>{errors.accountHolderName}</Text>
+              )}
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Amount (₹)</Text>
+              <TextInput
+                style={[styles.input, errors.amount && styles.inputError]}
+                placeholder="Enter amount"
+                value={amount}
+                onChangeText={(text) => {
+                  setAmount(text.replace(/[^0-9.]/g, ''));
+                  if (errors.amount) {
+                    setErrors(prev => ({ ...prev, amount: undefined }));
+                  }
+                }}
+                keyboardType="decimal-pad"
+              />
+              {errors.amount && (
+                <Text style={styles.errorText}>{errors.amount}</Text>
+              )}
             </View>
 
             <TouchableOpacity
@@ -144,38 +210,39 @@ export default function ToBankAccountScreen() {
             >
               <Text style={styles.continueButtonText}>Continue</Text>
             </TouchableOpacity>
-          </View>
+          </>
         ) : (
           <View style={styles.pinContainer}>
-             <Text style={styles.pinLabel}>Enter UPI PIN to Pay</Text>
-             <TextInput
-               style={styles.pinInput}
-               placeholder="Enter 6-digit PIN"
-               keyboardType="numeric"
-               maxLength={6}
-               secureTextEntry
-               value={upiPin}
-               onChangeText={setUpiPin}
-             />
-             <TouchableOpacity
-               style={styles.payButton}
-               onPress={handlePayment}
-               disabled={loading}
-             >
-               {loading ? (
-                 <ActivityIndicator color="#fff" />
-               ) : (
-                 <Text style={styles.payButtonText}>Pay ₹{amount}</Text>
-               )}
-             </TouchableOpacity>
-             <TouchableOpacity
-                style={styles.cancelButton}
-                onPress={() => setShowPinInput(false)}
-                disabled={loading}
-             >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-             </TouchableOpacity>
-           </View>
+            <Text style={styles.pinLabel}>Enter UPI PIN to Pay</Text>
+            <Text style={styles.paymentAmountText}>Paying: ₹{amount}</Text>
+            <TextInput
+              style={styles.pinInput}
+              placeholder="Enter 6-digit PIN"
+              keyboardType="numeric"
+              maxLength={6}
+              secureTextEntry
+              value={upiPin}
+              onChangeText={setUpiPin}
+            />
+            <TouchableOpacity
+              style={styles.payButton}
+              onPress={handlePayment}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.payButtonText}>Pay ₹{amount}</Text>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={() => setShowPinInput(false)}
+              disabled={loading}
+            >
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
         )}
       </ScrollView>
     </SafeAreaView>
@@ -199,17 +266,21 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 20,
-    fontWeight: '600',
+    fontFamily: 'Inter-Bold',
+    color: '#172e73',
   },
   content: {
     flex: 1,
     padding: 16,
   },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 12,
-    color: '#333',
+  inputGroup: {
+    marginBottom: 16,
+  },
+  label: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    color: '#666',
+    marginBottom: 8,
   },
   input: {
     borderWidth: 1,
@@ -217,36 +288,28 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
-    marginBottom: 12,
+    fontFamily: 'Inter-Regular',
   },
-  amountInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
-    paddingBottom: 8,
-    marginBottom: 24,
+  inputError: {
+    borderColor: '#DB0011',
   },
-  currencySymbol: {
-    fontSize: 24,
-    fontWeight: '500',
-    marginRight: 8,
-  },
-  amountInput: {
-    flex: 1,
-    fontSize: 24,
-    fontWeight: '500',
+  errorText: {
+    color: '#DB0011',
+    fontSize: 12,
+    fontFamily: 'Inter-Regular',
+    marginTop: 4,
   },
   continueButton: {
     backgroundColor: '#172e73',
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
+    marginTop: 20,
   },
   continueButtonText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Inter-Bold',
   },
   pinContainer: {
     marginTop: 24,
@@ -254,9 +317,15 @@ const styles = StyleSheet.create({
   },
   pinLabel: {
     fontSize: 16,
-    fontWeight: '500',
-    marginBottom: 12,
+    fontFamily: 'Inter-Medium',
+    marginBottom: 8,
     color: '#333',
+  },
+  paymentAmountText: {
+    fontSize: 18,
+    fontFamily: 'Inter-Bold',
+    marginBottom: 20,
+    color: '#172e73',
   },
   pinInput: {
     borderWidth: 1,
@@ -279,7 +348,7 @@ const styles = StyleSheet.create({
   payButtonText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Inter-Bold',
   },
   cancelButton: {
     backgroundColor: '#e0e0e0',
@@ -291,6 +360,6 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     color: '#333',
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Inter-Bold',
   },
 }); 

@@ -32,25 +32,56 @@ const SectionHeader = ({ title }) => (
 export default function ProfileScreen() {
   const router = useRouter();
   const { userData } = useUser();
-  const { logout } = useAuth();
+  const { logout, isBiometricEnabled, toggleBiometric, checkBiometricSupport, authenticateWithBiometrics } = useAuth();
   const fullName = `${userData.firstName} ${userData.lastName}`.trim() || 'User';
   const [faceIdEnabled, setFaceIdEnabled] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [darkModeEnabled, setDarkModeEnabled] = useState(false);
 
-  const checkBiometricSupport = async () => {
-    const compatible = await LocalAuthentication.hasHardwareAsync();
+  const checkBiometricAvailability = async () => {
+    const compatible = await checkBiometricSupport();
     if (compatible) {
-      const enrolled = await LocalAuthentication.isEnrolledAsync();
-      if (enrolled) {
-        setFaceIdEnabled(true);
-      }
+      setFaceIdEnabled(isBiometricEnabled);
     }
   };
 
   React.useEffect(() => {
-    checkBiometricSupport();
-  }, []);
+    checkBiometricAvailability();
+  }, [isBiometricEnabled]);
+
+  const handleBiometricToggle = async (value: boolean) => {
+    try {
+      if (value) {
+        const compatible = await checkBiometricSupport();
+        if (!compatible) {
+          Alert.alert(
+            'Not Available',
+            'Biometric authentication is not available on this device.',
+            [{ text: 'OK' }]
+          );
+          return;
+        }
+        // Test authentication before enabling
+        const authenticated = await authenticateWithBiometrics();
+        if (!authenticated) {
+          Alert.alert(
+            'Authentication Failed',
+            'Please authenticate to enable Face ID/Touch ID.',
+            [{ text: 'OK' }]
+          );
+          return;
+        }
+      }
+      await toggleBiometric(value);
+      setFaceIdEnabled(value);
+    } catch (error) {
+      Alert.alert(
+        'Error',
+        'Failed to toggle biometric authentication. Please try again.',
+        [{ text: 'OK' }]
+      );
+    }
+  };
 
   const accountSettings = [
     {
@@ -88,7 +119,7 @@ export default function ProfileScreen() {
       rightElement: (
         <Switch
           value={faceIdEnabled}
-          onValueChange={setFaceIdEnabled}
+          onValueChange={handleBiometricToggle}
           trackColor={{ false: '#767577', true: '#81b0ff' }}
           thumbColor={faceIdEnabled ? '#172e73' : '#f4f3f4'}
         />

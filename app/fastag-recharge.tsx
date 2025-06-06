@@ -10,23 +10,36 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, CreditCard, DollarSign } from 'lucide-react-native';
+import { ArrowLeft } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
+import { validateVehicleNumber, validateAmount } from './utils/validation';
 
 export default function FastagRechargeScreen() {
   const router = useRouter();
-
   const [vehicleNumber, setVehicleNumber] = useState('');
   const [fastagAmount, setFastagAmount] = useState('');
   const [upiPin, setUpiPin] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPinInput, setShowPinInput] = useState(false);
+  const [errors, setErrors] = useState<{
+    vehicleNumber?: string;
+    amount?: string;
+  }>({});
 
   const handleContinue = () => {
-    if (!vehicleNumber || !fastagAmount || isNaN(Number(fastagAmount)) || Number(fastagAmount) <= 0) {
-      Alert.alert('Invalid Details', 'Please enter a valid vehicle number and a valid recharge amount.');
+    // Validate vehicle number and amount
+    const vehicleValidation = validateVehicleNumber(vehicleNumber);
+    const amountValidation = validateAmount(fastagAmount);
+
+    if (!vehicleValidation.isValid || !amountValidation.isValid) {
+      setErrors({
+        vehicleNumber: vehicleValidation.error,
+        amount: amountValidation.error,
+      });
       return;
     }
+
+    setErrors({});
     setShowPinInput(true);
   };
 
@@ -47,22 +60,37 @@ export default function FastagRechargeScreen() {
       if (isSuccess) {
         router.push({
           pathname: '/transaction-success',
-          params: { amount: fastagAmount, recipient: `FASTag for ${vehicleNumber}`, description: 'FASTag Recharge' },
+          params: {
+            type: 'recharge',
+            amount: fastagAmount,
+            recipient: `FASTag for ${vehicleNumber}`,
+            description: 'FASTag Recharge',
+          },
         });
       } else {
-        const simulatedError = new Error("FASTag service unavailable"); // Replace with actual error details
         router.push({
           pathname: '/transaction-failure',
-          params: { message: simulatedError.message },
+          params: {
+            type: 'recharge',
+            amount: fastagAmount,
+            recipient: `FASTag for ${vehicleNumber}`,
+            description: 'FASTag Recharge',
+            error: 'FASTag service unavailable',
+          },
         });
       }
-
     } catch (error) {
       console.error('Payment error:', error);
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
       router.push({
         pathname: '/transaction-failure',
-        params: { message: errorMessage },
+        params: {
+          type: 'recharge',
+          amount: fastagAmount,
+          recipient: `FASTag for ${vehicleNumber}`,
+          description: 'FASTag Recharge',
+          error: errorMessage,
+        },
       });
     } finally {
       setLoading(false);
@@ -75,31 +103,55 @@ export default function FastagRechargeScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity
-          style={styles.backButton}
           onPress={() => router.back()}
+          style={styles.backButton}
         >
-          <ArrowLeft size={24} color="#000" />
+          <ArrowLeft size={24} color="#172e73" />
         </TouchableOpacity>
-        <Text style={styles.title}>Fastag Recharge</Text>
+        <Text style={styles.title}>FASTag Recharge</Text>
       </View>
+
       <ScrollView style={styles.content}>
         {!showPinInput ? (
-          <View>
-            <Text style={styles.sectionTitle}>Enter FASTag Details</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Vehicle Number"
-              autoCapitalize="characters"
-              value={vehicleNumber}
-              onChangeText={setVehicleNumber}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Recharge Amount"
-              keyboardType="numeric"
-              value={fastagAmount}
-              onChangeText={setFastagAmount}
-            />
+          <>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Vehicle Number</Text>
+              <TextInput
+                style={[styles.input, errors.vehicleNumber && styles.inputError]}
+                placeholder="Enter vehicle number (e.g., KA01AB1234)"
+                value={vehicleNumber}
+                onChangeText={(text) => {
+                  setVehicleNumber(text.toUpperCase());
+                  if (errors.vehicleNumber) {
+                    setErrors(prev => ({ ...prev, vehicleNumber: undefined }));
+                  }
+                }}
+                autoCapitalize="characters"
+                maxLength={10}
+              />
+              {errors.vehicleNumber && (
+                <Text style={styles.errorText}>{errors.vehicleNumber}</Text>
+              )}
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Recharge Amount (₹)</Text>
+              <TextInput
+                style={[styles.input, errors.amount && styles.inputError]}
+                placeholder="Enter recharge amount"
+                value={fastagAmount}
+                onChangeText={(text) => {
+                  setFastagAmount(text.replace(/[^0-9.]/g, ''));
+                  if (errors.amount) {
+                    setErrors(prev => ({ ...prev, amount: undefined }));
+                  }
+                }}
+                keyboardType="decimal-pad"
+              />
+              {errors.amount && (
+                <Text style={styles.errorText}>{errors.amount}</Text>
+              )}
+            </View>
 
             <TouchableOpacity
               style={styles.continueButton}
@@ -107,39 +159,39 @@ export default function FastagRechargeScreen() {
             >
               <Text style={styles.continueButtonText}>Continue</Text>
             </TouchableOpacity>
-          </View>
+          </>
         ) : (
-           <View style={styles.pinContainer}>
-              <Text style={styles.pinLabel}>Enter UPI PIN to Pay</Text>
-              <Text style={styles.paymentAmountText}>Recharging: ₹{fastagAmount} for vehicle {vehicleNumber}</Text>
-              <TextInput
-                style={styles.pinInput}
-                placeholder="Enter 6-digit PIN"
-                keyboardType="numeric"
-                maxLength={6}
-                secureTextEntry
-                value={upiPin}
-                onChangeText={setUpiPin}
-              />
-              <TouchableOpacity
-                style={styles.payButton}
-                onPress={handlePayment}
-                disabled={loading}
-              >
-                {loading ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={styles.payButtonText}>Pay ₹{fastagAmount}</Text>
-                )}
-              </TouchableOpacity>
-               <TouchableOpacity
-                 style={styles.cancelButton}
-                 onPress={() => setShowPinInput(false)}
-                 disabled={loading}
-              >
-                 <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
+          <View style={styles.pinContainer}>
+            <Text style={styles.pinLabel}>Enter UPI PIN to Pay</Text>
+            <Text style={styles.paymentAmountText}>Paying: ₹{fastagAmount}</Text>
+            <TextInput
+              style={styles.pinInput}
+              placeholder="Enter 6-digit PIN"
+              keyboardType="numeric"
+              maxLength={6}
+              secureTextEntry
+              value={upiPin}
+              onChangeText={setUpiPin}
+            />
+            <TouchableOpacity
+              style={styles.payButton}
+              onPress={handlePayment}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.payButtonText}>Pay ₹{fastagAmount}</Text>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={() => setShowPinInput(false)}
+              disabled={loading}
+            >
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
         )}
       </ScrollView>
     </SafeAreaView>
@@ -163,17 +215,21 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 20,
-    fontWeight: '600',
+    fontFamily: 'Inter-Bold',
+    color: '#172e73',
   },
   content: {
     flex: 1,
     padding: 16,
   },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 12,
-    color: '#333',
+  inputGroup: {
+    marginBottom: 16,
+  },
+  label: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    color: '#666',
+    marginBottom: 8,
   },
   input: {
     borderWidth: 1,
@@ -181,7 +237,16 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
-    marginBottom: 12,
+    fontFamily: 'Inter-Regular',
+  },
+  inputError: {
+    borderColor: '#DB0011',
+  },
+  errorText: {
+    color: '#DB0011',
+    fontSize: 12,
+    fontFamily: 'Inter-Regular',
+    marginTop: 4,
   },
   continueButton: {
     backgroundColor: '#172e73',
@@ -193,7 +258,7 @@ const styles = StyleSheet.create({
   continueButtonText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Inter-Bold',
   },
   pinContainer: {
     marginTop: 24,
@@ -201,13 +266,13 @@ const styles = StyleSheet.create({
   },
   pinLabel: {
     fontSize: 16,
-    fontWeight: '500',
+    fontFamily: 'Inter-Medium',
     marginBottom: 8,
     color: '#333',
   },
   paymentAmountText: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: 'Inter-Bold',
     marginBottom: 20,
     color: '#172e73',
   },
@@ -232,7 +297,7 @@ const styles = StyleSheet.create({
   payButtonText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Inter-Bold',
   },
   cancelButton: {
     backgroundColor: '#e0e0e0',
@@ -244,6 +309,6 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     color: '#333',
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Inter-Bold',
   },
 });
