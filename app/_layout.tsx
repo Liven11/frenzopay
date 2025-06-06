@@ -9,6 +9,7 @@ import UserProvider from './context/UserContext';
 import { TransactionProvider } from './context/TransactionContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { WalletProvider } from './context/WalletContext';
 import { SecureNavigation } from './components/SecureNavigation';
 import { ScreenshotPreventionOverlay } from './components/ScreenshotPreventionOverlay';
 import { securityManager } from './utils/security';
@@ -148,10 +149,12 @@ export default function RootLayout() {
       <AuthProvider>
         <UserProvider>
           <TransactionProvider>
-            <ThemeProvider value={colorScheme === 'light' ? DarkTheme : DefaultTheme}>
-              <RootLayoutNav />
-              <StatusBar style="light" />
-            </ThemeProvider>
+            <WalletProvider>
+              <ThemeProvider value={colorScheme === 'light' ? DarkTheme : DefaultTheme}>
+                <RootLayoutNav />
+                <StatusBar style="light" />
+              </ThemeProvider>
+            </WalletProvider>
           </TransactionProvider>
         </UserProvider>
       </AuthProvider>

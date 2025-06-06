@@ -1,10 +1,35 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Animated, AppState } from 'react-native';
+import { View, Text, StyleSheet, Animated } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as ScreenCapture from 'expo-screen-capture';
 
 export const ScreenshotPreventionOverlay: React.FC = () => {
   const [showOverlay, setShowOverlay] = useState(false);
   const fadeAnim = new Animated.Value(0);
+
+  useEffect(() => {
+    // Prevent screen capture when component mounts
+    const preventCapture = async () => {
+      try {
+        await ScreenCapture.preventScreenCaptureAsync();
+      } catch (error) {
+        console.warn('Failed to prevent screen capture:', error);
+      }
+    };
+
+    preventCapture();
+
+    // Set up screenshot listener
+    const subscription = ScreenCapture.addScreenshotListener(() => {
+      setShowOverlay(true);
+    });
+
+    // Cleanup when component unmounts
+    return () => {
+      subscription.remove();
+      ScreenCapture.allowScreenCaptureAsync().catch(console.warn);
+    };
+  }, []);
 
   useEffect(() => {
     if (showOverlay) {
@@ -15,40 +40,20 @@ export const ScreenshotPreventionOverlay: React.FC = () => {
         useNativeDriver: true,
       }).start();
 
-      // Auto hide after 3 seconds
+      // Auto hide after 5 seconds
       const timer = setTimeout(() => {
         Animated.timing(fadeAnim, {
           toValue: 0,
-          duration: 300,
+          duration: 500,
           useNativeDriver: true,
         }).start(() => {
           setShowOverlay(false);
         });
-      }, 3000);
+      }, 5000);
 
       return () => clearTimeout(timer);
     }
   }, [showOverlay]);
-
-  // Listen for screenshot attempts
-  useEffect(() => {
-    const handleScreenshotAttempt = () => {
-      setShowOverlay(true);
-    };
-
-    // Add event listener for screenshot attempts
-    // Note: This is a placeholder. In a real implementation, you would need to
-    // use native modules to detect screenshot attempts
-    const subscription = AppState.addEventListener('change', (nextAppState) => {
-      if (nextAppState === 'active') {
-        handleScreenshotAttempt();
-      }
-    });
-
-    return () => {
-      subscription.remove();
-    };
-  }, []);
 
   if (!showOverlay) return null;
 

@@ -13,9 +13,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { validateVehicleNumber, validateAmount } from './utils/validation';
+import { useWallet } from './context/WalletContext';
 
 export default function FastagRechargeScreen() {
   const router = useRouter();
+  const { balance, deductMoney, addMoney } = useWallet();
   const [vehicleNumber, setVehicleNumber] = useState('');
   const [fastagAmount, setFastagAmount] = useState('');
   const [upiPin, setUpiPin] = useState('');
@@ -39,6 +41,11 @@ export default function FastagRechargeScreen() {
       return;
     }
 
+    if (Number(fastagAmount) > balance) {
+      Alert.alert('Insufficient Balance', 'You don\'t have enough balance in your wallet for this recharge.');
+      return;
+    }
+
     setErrors({});
     setShowPinInput(true);
   };
@@ -51,6 +58,9 @@ export default function FastagRechargeScreen() {
 
     setLoading(true);
     try {
+      // Deduct amount from wallet
+      await deductMoney(Number(fastagAmount));
+
       // Simulate payment processing
       await new Promise(resolve => setTimeout(resolve, 2000));
 
@@ -68,6 +78,8 @@ export default function FastagRechargeScreen() {
           },
         });
       } else {
+        // If payment fails, add the amount back to wallet
+        await addMoney(Number(fastagAmount));
         router.push({
           pathname: '/transaction-failure',
           params: {
@@ -152,6 +164,8 @@ export default function FastagRechargeScreen() {
                 <Text style={styles.errorText}>{errors.amount}</Text>
               )}
             </View>
+
+            <Text style={styles.balanceText}>Available Balance: ₹{balance.toLocaleString()}</Text>
 
             <TouchableOpacity
               style={styles.continueButton}
@@ -310,5 +324,11 @@ const styles = StyleSheet.create({
     color: '#333',
     fontSize: 16,
     fontFamily: 'Inter-Bold',
+  },
+  balanceText: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 12,
+    textAlign: 'right',
   },
 });

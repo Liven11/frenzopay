@@ -12,9 +12,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, Tv, DollarSign } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
+import { useWallet } from './context/WalletContext';
 
 export default function DthPaymentsScreen() {
   const router = useRouter();
+  const { balance, deductMoney, addMoney } = useWallet();
 
   const [subscriberId, setSubscriberId] = useState('');
   const [dthAmount, setDthAmount] = useState('');
@@ -27,6 +29,12 @@ export default function DthPaymentsScreen() {
       Alert.alert('Invalid Details', 'Please enter a valid subscriber ID and amount.');
       return;
     }
+
+    if (Number(dthAmount) > balance) {
+      Alert.alert('Insufficient Balance', 'You don\'t have enough balance in your wallet for this payment.');
+      return;
+    }
+
     setShowPinInput(true);
   };
 
@@ -38,6 +46,9 @@ export default function DthPaymentsScreen() {
 
     setLoading(true);
     try {
+      // Deduct amount from wallet
+      await deductMoney(Number(dthAmount));
+
       // Simulate payment processing
       await new Promise(resolve => setTimeout(resolve, 2000));
 
@@ -47,13 +58,23 @@ export default function DthPaymentsScreen() {
       if (isSuccess) {
         router.push({
           pathname: '/transaction-success',
-          params: { amount: dthAmount, recipient: `DTH ID: ${subscriberId}`, description: 'DTH Payment' },
+          params: { 
+            amount: dthAmount, 
+            recipient: `DTH ID: ${subscriberId}`, 
+            description: 'DTH Payment' 
+          },
         });
       } else {
-        const simulatedError = new Error("DTH operator error"); // Replace with actual error details
+        // If payment fails, add the amount back to wallet
+        await addMoney(Number(dthAmount));
         router.push({
           pathname: '/transaction-failure',
-        params: { message: simulatedError.message },
+          params: { 
+            message: 'DTH operator error',
+            amount: dthAmount,
+            recipient: `DTH ID: ${subscriberId}`,
+            description: 'DTH Payment'
+          },
         });
       }
 
@@ -62,7 +83,12 @@ export default function DthPaymentsScreen() {
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
       router.push({
         pathname: '/transaction-failure',
-        params: { message: errorMessage },
+        params: { 
+          message: errorMessage,
+          amount: dthAmount,
+          recipient: `DTH ID: ${subscriberId}`,
+          description: 'DTH Payment'
+        },
       });
     } finally {
       setLoading(false);
@@ -100,6 +126,8 @@ export default function DthPaymentsScreen() {
               value={dthAmount}
               onChangeText={setDthAmount}
             />
+
+            <Text style={styles.balanceText}>Available Balance: ₹{balance.toLocaleString()}</Text>
 
             <TouchableOpacity
               style={styles.continueButton}
@@ -245,5 +273,11 @@ const styles = StyleSheet.create({
     color: '#333',
     fontSize: 16,
     fontWeight: '600',
+  },
+  balanceText: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 12,
+    textAlign: 'right',
   },
 }); 

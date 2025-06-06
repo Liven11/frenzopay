@@ -12,9 +12,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, Phone, DollarSign } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
+import { useWallet } from './context/WalletContext';
 
 export default function MobileRechargeScreen() {
   const router = useRouter();
+  const { balance, deductMoney, addMoney } = useWallet();
 
   const [mobileNumber, setMobileNumber] = useState('');
   const [rechargeAmount, setRechargeAmount] = useState('');
@@ -27,6 +29,12 @@ export default function MobileRechargeScreen() {
       Alert.alert('Invalid Details', 'Please enter a valid 10-digit mobile number and a valid recharge amount.');
       return;
     }
+
+    if (Number(rechargeAmount) > balance) {
+      Alert.alert('Insufficient Balance', 'You don\'t have enough balance in your wallet for this recharge.');
+      return;
+    }
+
     setShowPinInput(true);
   };
 
@@ -38,6 +46,9 @@ export default function MobileRechargeScreen() {
 
     setLoading(true);
     try {
+      // Deduct amount from wallet
+      await deductMoney(Number(rechargeAmount));
+
       // Simulate payment processing
       await new Promise(resolve => setTimeout(resolve, 2000));
 
@@ -55,6 +66,8 @@ export default function MobileRechargeScreen() {
           },
         });
       } else {
+        // If payment fails, add the amount back to wallet
+        await addMoney(Number(rechargeAmount));
         router.push({
           pathname: '/transaction-failure',
           params: {
@@ -118,7 +131,7 @@ export default function MobileRechargeScreen() {
               onChangeText={setRechargeAmount}
             />
 
-            {/* Could add plan selection here */}
+            <Text style={styles.balanceText}>Available Balance: ₹{balance.toLocaleString()}</Text>
 
             <TouchableOpacity
               style={styles.continueButton}
@@ -264,5 +277,11 @@ const styles = StyleSheet.create({
     color: '#333',
     fontSize: 16,
     fontWeight: '600',
+  },
+  balanceText: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 12,
+    textAlign: 'right',
   },
 }); 

@@ -1,12 +1,14 @@
 import React from 'react';
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CreditCard, ArrowLeft } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import RecentTransactions from './components/RecentTransactions';
+import { useWallet } from './context/WalletContext';
 
 export default function WalletScreen() {
   const router = useRouter();
+  const { balance, isLoading } = useWallet();
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -26,12 +28,22 @@ export default function WalletScreen() {
             <CreditCard size={24} color="#172e73" />
             <Text style={styles.balanceTitle}>Total Balance</Text>
           </View>
-          <Text style={styles.balanceAmount}>₹85,625</Text>
+          {isLoading ? (
+            <ActivityIndicator size="large" color="#172e73" style={styles.loader} />
+          ) : (
+            <Text style={styles.balanceAmount}>₹{balance.toLocaleString()}</Text>
+          )}
           <View style={styles.balanceActions}>
-            <TouchableOpacity style={styles.actionButton}>
+            <TouchableOpacity 
+              style={styles.actionButton}
+              onPress={() => router.push('/add-money')}
+            >
               <Text style={styles.actionButtonText}>Add Money</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.actionButton, styles.withdrawButton]}>
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.withdrawButton]}
+              onPress={() => router.push('/to-bank-account')}
+            >
               <Text style={[styles.actionButtonText, styles.withdrawButtonText]}>Withdraw</Text>
             </TouchableOpacity>
           </View>
@@ -117,6 +129,9 @@ const styles = StyleSheet.create({
   },
   withdrawButtonText: {
     color: '#172e73',
+  },
+  loader: {
+    marginVertical: 15,
   },
   transactionsSection: {
     padding: 20,
