@@ -1,22 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { StyleSheet, View, Text, Image, ScrollView, TouchableOpacity, Platform, Dimensions, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, Text, Image, ScrollView, TouchableOpacity, Platform, Dimensions, ActivityIndicator, FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RefreshCw, Star, Bell, Calculator, Send, QrCode, Upload, Zap, CreditCard, ShoppingBag, Shield, User, Search } from 'lucide-react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Link, useRouter, useFocusEffect } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useUser } from '../context/UserContext';
-
-// Define the type for a transaction item
-interface Transaction {
-  id: number;
-  name: string;
-  date: string;
-  description: string;
-  amount: string;
-  isExpense: boolean;
-  AvatarComponent: () => React.JSX.Element;
-}
+import { useTransactions, Transaction } from '../context/TransactionContext';
+import { format } from 'date-fns';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const { width } = Dimensions.get('window');
 const cardWidth = (width - 40) / 2 - 10; // 20 padding horizontal, 20 gap total for 2 cards
@@ -30,20 +22,42 @@ const ServiceItem = ({ Icon, label, onPress }) => (
   </TouchableOpacity>
 );
 
-const TransactionItem = ({ name, date, description, amount, isExpense, AvatarComponent }) => (
-  <View style={styles.transactionItem}>
-    <View style={styles.transactionAvatarPlaceholder}>
-      <AvatarComponent />
+const TransactionItem = ({ transaction }: { transaction: Transaction }) => {
+  const getTransactionIcon = () => {
+    switch (transaction.type) {
+      case 'payment':
+        return require('../../assets/expense-amazon.svg');
+      case 'transfer':
+        return require('../../assets/avatar-1.svg');
+      case 'recharge':
+        return require('../../assets/expense-paytm.svg');
+      default:
+        return require('../../assets/avatar.svg');
+    }
+  };
+
+  return (
+    <View style={styles.transactionItem}>
+      <View style={styles.transactionAvatarPlaceholder}>
+        <Image source={getTransactionIcon()} style={styles.transactionAvatarImage} />
+      </View>
+      <View style={styles.transactionDetails}>
+        <Text style={styles.transactionName}>{transaction.recipient}</Text>
+        <Text style={styles.transactionDescription}>
+          {format(transaction.timestamp, 'dd MMM')} • {transaction.description}
+        </Text>
+      </View>
+      <Text 
+        style={[
+          styles.transactionAmount, 
+          { color: transaction.status === 'success' ? '#17C261' : '#DB0011' }
+        ]}
+      >
+        {transaction.status === 'success' ? '+' : '-'}₹{transaction.amount}
+      </Text>
     </View>
-    <View style={styles.transactionDetails}>
-      <Text style={styles.transactionName}>{name}</Text>
-      <Text style={styles.transactionDescription}>{date} • {description}</Text>
-    </View>
-    <Text style={[styles.transactionAmount, { color: isExpense ? '#DB0011' : '#17C261' }]}>
-      {amount}
-    </Text>
-  </View>
-);
+  );
+};
 
 const OfferCard = ({ title, description, color, illustration, onPress }) => (
   <TouchableOpacity style={[styles.offerCard, { backgroundColor: color }]} onPress={onPress}>
@@ -62,88 +76,22 @@ const OfferCard = ({ title, description, color, illustration, onPress }) => (
 export default function HomeScreen() {
   const router = useRouter();
   const { userData } = useUser();
+  const { getRecentTransactions } = useTransactions();
   const fullName = `${userData.firstName} ${userData.lastName}`.trim() || 'User';
   const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
   const [loadingTransactions, setLoadingTransactions] = useState(true);
 
   const fetchRecentTransactions = useCallback(async () => {
     setLoadingTransactions(true);
-    // Simulate fetching data
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    const dummyTransactions: Transaction[] = [
-      {
-        id: 1,
-        name: "Amazon Pantry",
-        date: "01 Jan",
-        description: "Subscription payment",
-        amount: "-1,200",
-        isExpense: true,
-        AvatarComponent: () => <Image source={require('../../assets/expense-amazon.svg')} style={styles.transactionAvatarImage} />
-      },
-      {
-        id: 2,
-        name: "Riya Mehta",
-        date: "05 Jan",
-        description: "Graduation Gift",
-        amount: "+10,000",
-        isExpense: false,
-        AvatarComponent: () => <Image source={require('../../assets/avatar-1.svg')} style={styles.transactionAvatarImage} />
-      },
-      {
-        id: 3,
-        name: "Paytm Auto Pay",
-        date: "22 Jan",
-        description: "Weekly Transaction through...",
-        amount: "-3,500",
-        isExpense: true,
-        AvatarComponent: () => <Image source={require('../../assets/expense-paytm.svg')} style={styles.transactionAvatarImage} />
-      },
-      {
-        id: 4,
-        name: "Parimal Sinha",
-        date: "05 Jan",
-        description: "House Rent",
-        amount: "+6,550",
-        isExpense: false,
-        AvatarComponent: () => <Image source={require('../../assets/avatar.svg')} style={styles.transactionAvatarImage} />
-      },
-      {
-        id: 5,
-        name: "Zomato Online Order",
-        date: "05 Jan",
-        description: "Gift for Christmas",
-        amount: "-1301.80",
-        isExpense: true,
-        AvatarComponent: () => <Image source={require('../../assets/alms-1.png')} style={styles.transactionAvatarImage} />
-      }
-    ];
-
-    // Simulate a new transaction based on a random outcome
-    const isSuccess = Math.random() > 0.5; // 50% chance of success
-    const newTransaction: Transaction = isSuccess ?
-      { // Simulated success transaction
-        id: dummyTransactions.length + 1,
-        name: "New Contact Payment",
-        date: "Today",
-        description: "Mobile Payment",
-        amount: "+500", // Sample amount
-        isExpense: false,
-        AvatarComponent: () => <Image source={require('../../assets/avatar-1.svg')} style={styles.transactionAvatarImage} />
-      } :
-      { // Simulated failure transaction
-        id: dummyTransactions.length + 1,
-        name: "Payment Attempt",
-        date: "Today",
-        description: "Payment Failed",
-        amount: "-500", // Sample amount
-        isExpense: true,
-        AvatarComponent: () => <Image source={require('../../assets/expense-amazon.svg')} style={styles.transactionAvatarImage} /> // Using a placeholder icon
-      };
-
-    setRecentTransactions([newTransaction, ...dummyTransactions]); // Prepend the new transaction
-    setLoadingTransactions(false);
-  }, []);
+    try {
+      const transactions = getRecentTransactions(5); // Get 5 most recent transactions
+      setRecentTransactions(transactions);
+    } catch (error) {
+      console.error('Error fetching transactions:', error);
+    } finally {
+      setLoadingTransactions(false);
+    }
+  }, [getRecentTransactions]);
 
   useFocusEffect(
     useCallback(() => {
@@ -154,7 +102,7 @@ export default function HomeScreen() {
   const serviceCategories = [
     {
       title: 'Money Transfer',
-      icon: () => <FontAwesome5 name="tags" size={20} color="#172e73" />,
+      icon: (color) => <FontAwesome5 name="tags" size={20} color={color} />,
       items: [
         { id: 1, label: 'Scan & Pay', Icon: () => <MaterialCommunityIcons name="qrcode-scan" size={24} color="#172e73" />, route: '/scan' },
         { id: 2, label: 'To Mobile', Icon: () => <MaterialCommunityIcons name="cellphone" size={24} color="#172e73" />, route: '/to-mobile' },
@@ -164,7 +112,7 @@ export default function HomeScreen() {
     },
     {
       title: 'Recharges & Bill Payments',
-      icon: () => <FontAwesome5 name="tags" size={20} color="#172e73" />,
+      icon: (color) => <FontAwesome5 name="tags" size={20} color={color} />,
       items: [
         { id: 5, label: 'Electricity Bill', Icon: () => <MaterialCommunityIcons name="flash" size={24} color="#172e73" />, route: '/electricity-bill' },
         { id: 6, label: 'Mobile Recharge', Icon: () => <MaterialCommunityIcons name="cellphone-wireless" size={24} color="#172e73" />, route: '/mobile-recharge' },
@@ -174,7 +122,7 @@ export default function HomeScreen() {
     },
     {
       title: 'Loans & Investments',
-      icon: () => <FontAwesome5 name="tags" size={20} color="#172e73" />,
+      icon: (color) => <FontAwesome5 name="tags" size={20} color={color} />,
       items: [
         { id: 9, label: 'Personal Loans', Icon: () => <MaterialCommunityIcons name="account" size={24} color="#172e73" />, route: '/personal-loans' },
         { id: 10, label: 'Digital FDs', Icon: () => <MaterialCommunityIcons name="wallet" size={24} color="#172e73" />, route: '/digital-fds' },
@@ -259,7 +207,7 @@ export default function HomeScreen() {
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={[styles.promoBanner, { backgroundColor: '#ff7043' }]}>
+        <View style={[styles.promoBanner, { backgroundColor: '#172e73' }]}>
           <View style={styles.promoTextContainer}>
             <Text style={styles.promoGreeting}>Hello from FrenzoPay!</Text>
             <Text style={styles.promoTitle}>Pay Credit Card Bills</Text>
@@ -269,7 +217,7 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
           <Image
-            source={require('../../assets/untitled-design---2025-06-03t105328-501-1.png')}
+            source={require('../../assets/personwithphone.png')}
             style={styles.promoIllustration}
             resizeMode="contain"
           />
@@ -277,10 +225,15 @@ export default function HomeScreen() {
 
         {serviceCategories.map((category) => (
           <View key={category.title} style={styles.categoryContainer}>
-            <View style={styles.categoryHeader}>
-               {category.icon()}
-               <Text style={styles.categoryTitle}>{category.title}</Text>
-            </View>
+            <LinearGradient
+              colors={['#F07103', '#172E73']}
+              start={{ x: 0, y: 0.5 }}
+              end={{ x: 1, y: 0.5 }}
+              style={styles.categoryHeaderGradient}
+            >
+              {category.icon('white')}
+              <Text style={styles.categoryTitleGradient}>{category.title}</Text>
+            </LinearGradient>
             <View style={styles.servicesGrid}>
               {category.items.map((item) => (
                 <ServiceItem key={item.id} Icon={item.Icon} label={item.label} onPress={() => router.push(item.route)} />
@@ -302,26 +255,24 @@ export default function HomeScreen() {
           ))}
         </View>
 
-        <View style={styles.transactionsContainer}>
-           <View style={styles.transactionsHeader}>
-             <MaterialCommunityIcons name="tag" size={20} color="#172e73" />
-             <Text style={styles.transactionsTitle}>Recent Transacation ...</Text>
-           </View>
-           {loadingTransactions ? (
-             <ActivityIndicator size="large" color="#172e73" />
-           ) : (
-             recentTransactions.map((transaction) => (
-               <TransactionItem
-                 key={transaction.id}
-                 name={transaction.name}
-                 date={transaction.date}
-                 description={transaction.description}
-                 amount={transaction.amount}
-                 isExpense={transaction.isExpense}
-                 AvatarComponent={transaction.AvatarComponent}
-               />
-             ))
-           )}
+        <View style={styles.transactionsSection}>
+          <View style={styles.transactionsHeader}>
+            <MaterialCommunityIcons name="tag" size={20} color="#172e73" />
+            <Text style={styles.transactionsTitle}>Recent Transactions</Text>
+          </View>
+          {loadingTransactions ? (
+            <ActivityIndicator size="large" color="#172e73" />
+          ) : recentTransactions.length > 0 ? (
+            <FlatList
+              data={recentTransactions}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => <TransactionItem transaction={item} />}
+              showsVerticalScrollIndicator={false}
+              scrollEnabled={false}
+            />
+          ) : (
+            <Text style={styles.noTransactionsText}>No recent transactions</Text>
+          )}
         </View>
       </ScrollView>
 
@@ -473,17 +424,32 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     padding: 15,
     marginBottom: 20,
+    overflow: 'hidden',
   },
   categoryHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 15,
+    marginBottom: 10,
+  },
+  categoryHeaderGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    gap: 7,
+    borderTopLeftRadius: 15,
+    borderTopRightRadius: 15,
   },
   categoryTitle: {
     fontSize: 16,
     fontFamily: 'Inter-Bold',
     marginLeft: 10,
     color: '#172e73'
+  },
+  categoryTitleGradient: {
+    fontSize: 16,
+    fontFamily: 'Inter-Bold',
+    color: 'white',
   },
   servicesGrid: {
     flexDirection: 'row',
@@ -548,7 +514,7 @@ const styles = StyleSheet.create({
     height: 60,
     alignSelf: 'flex-end',
   },
-  transactionsContainer: {
+  transactionsSection: {
     backgroundColor: '#EEF7FB',
     borderRadius: 15,
     padding: 15,
@@ -566,10 +532,10 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     color: '#172e73'
   },
-   recentTransactionsTitle: {
+   noTransactionsText: {
      fontSize: 14,
-     fontFamily: 'Inter-Bold',
-     marginBottom: 10,
+     fontFamily: 'Inter-Regular',
+     marginLeft: 10,
      color: '#172e73'
    },
   transactionItem: {

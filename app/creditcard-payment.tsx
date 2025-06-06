@@ -1,181 +1,255 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   TextInput,
+  TouchableOpacity,
   ScrollView,
   Alert,
-  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ArrowLeft, DollarSign, FileText } from 'lucide-react-native';
-import { useRouter } from 'expo-router';
+import { router } from 'expo-router';
+import { ArrowLeft, CreditCard } from 'lucide-react-native';
+import { validateCreditCardPayment } from './utils/validation';
 
-interface BillDetails {
-  consumerNumber: string;
-  amount: string;
-  dueDate: string;
-}
+export default function CreditCardPaymentScreen() {
+  const [formData, setFormData] = useState({
+    cardNumber: '',
+    expiryDate: '',
+    cvv: '',
+    amount: '',
+  });
 
-export default function CreditCardBillPaymentScreen() {
-  const router = useRouter();
+  const [errors, setErrors] = useState<{
+    cardNumber?: string;
+    expiryDate?: string;
+    cvv?: string;
+    amount?: string;
+  }>({});
 
-  const [consumerNumber, setConsumerNumber] = useState('');
-  const [billAmount, setBillAmount] = useState('');
-  const [upiPin, setUpiPin] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [showPinInput, setShowPinInput] = useState(false);
-  const [fetchedBill, setFetchedBill] = useState<BillDetails | null>(null);
+  const [cardType, setCardType] = useState<'visa' | 'mastercard' | 'unknown'>('unknown');
 
-  const handleFetchBill = () => {
-    if (!consumerNumber) {
-      Alert.alert('Missing Information', 'Please enter the consumer number.');
-      return;
-    }
-    // Simulate fetching bill details
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      // Simulate a fetched bill amount and details
-      const simulatedBillAmount = (Math.random() * 1000 + 500).toFixed(2);
-      setBillAmount(simulatedBillAmount);
-      setFetchedBill({ consumerNumber, amount: simulatedBillAmount, dueDate: '25th of next month' });
-    }, 1500);
+  useEffect(() => {
+    // Validate card type whenever card number changes
+    const validation = validateCreditCardPayment(
+      formData.cardNumber,
+      formData.expiryDate,
+      formData.cvv,
+      formData.amount
+    );
+    setCardType(validation.cardType || 'unknown');
+  }, [formData.cardNumber]);
+
+  const formatCardNumber = (text: string) => {
+    // Remove all non-digit characters
+    const cleaned = text.replace(/\D/g, '');
+    // Add space after every 4 digits
+    const formatted = cleaned.replace(/(\d{4})/g, '$1 ').trim();
+    return formatted;
   };
 
-  const handleContinue = () => {
-    if (!billAmount || isNaN(Number(billAmount)) || Number(billAmount) <= 0) {
-      Alert.alert('Invalid Amount', 'Please enter a valid bill amount.');
-      return;
+  const formatExpiryDate = (text: string) => {
+    // Remove all non-digit characters
+    const cleaned = text.replace(/\D/g, '');
+    // Add slash after 2 digits
+    if (cleaned.length >= 2) {
+      return `${cleaned.slice(0, 2)}/${cleaned.slice(2, 4)}`;
     }
-    setShowPinInput(true);
+    return cleaned;
   };
 
-  const handlePayment = async () => {
-    if (upiPin.length !== 6) {
-      Alert.alert('Invalid PIN', 'Please enter a 6-digit UPI PIN.');
+  const handleInputChange = (field: string, value: string) => {
+    let formattedValue = value;
+
+    switch (field) {
+      case 'cardNumber':
+        formattedValue = formatCardNumber(value);
+        break;
+      case 'expiryDate':
+        formattedValue = formatExpiryDate(value);
+        break;
+      case 'cvv':
+        formattedValue = value.replace(/\D/g, '').slice(0, 4);
+        break;
+      case 'amount':
+        formattedValue = value.replace(/[^0-9.]/g, '');
+        break;
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      [field]: formattedValue
+    }));
+
+    // Clear error when user starts typing
+    if (errors[field as keyof typeof errors]) {
+      setErrors(prev => ({
+        ...prev,
+        [field]: undefined
+      }));
+    }
+  };
+
+  const handleSubmit = () => {
+    const validation = validateCreditCardPayment(
+      formData.cardNumber,
+      formData.expiryDate,
+      formData.cvv,
+      formData.amount
+    );
+
+    if (!validation.isValid) {
+      setErrors(validation.errors);
       return;
     }
 
-    setLoading(true);
-    try {
-      // Simulate payment processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
+    // Process payment
+    Alert.alert(
+      'Confirm Payment',
+      `Are you sure you want to pay ₹${formData.amount}?`,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Pay',
+          onPress: () => {
+            // Simulate payment processing
+            setTimeout(() => {
+              router.push({
+                pathname: '/transaction-success',
+                params: {
+                  type: 'payment',
+                  amount: formData.amount,
+                  recipient: `${cardType.charAt(0).toUpperCase() + cardType.slice(1)} Card Payment`,
+                  description: `Credit card payment ending with ${formData.cardNumber.slice(-4)}`,
+                },
+              });
+            }, 1500);
+          },
+        },
+      ]
+    );
+  };
 
-      // Simulate success or failure
-      const isSuccess = Math.random() > 0.3; // 70% chance of success
-
-      if (isSuccess) {
-        router.push({
-          pathname: '/transaction-success',
-          params: { amount: billAmount, recipient: 'Credit Card Bill' },
-        });
-      } else {
-        const simulatedError = new Error("Payment gateway error"); // Replace with actual error details
-        router.push({
-          pathname: '/transaction-failure',
-          params: { message: simulatedError.message },
-        });
-      }
-
-    } catch (error) {
-      console.error('Payment error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
-      router.push({
-        pathname: '/transaction-failure',
-        params: { message: errorMessage },
-      });
-    } finally {
-      setLoading(false);
-      setShowPinInput(false);
-      setUpiPin('');
+  const getCardIcon = () => {
+    switch (cardType) {
+      case 'visa':
+        return require('../assets/visa.png');
+      case 'mastercard':
+        return require('../assets/mastercard.png');
+      default:
+        return null;
     }
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
-          <ArrowLeft size={24} color="#000" />
-        </TouchableOpacity>
-        <Text style={styles.title}>Credit Card Bill Payment</Text>
-      </View>
-      <ScrollView style={styles.content}>
-        {!showPinInput ? (
-          <View>
-            <Text style={styles.sectionTitle}>Enter Details</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Card Number"
-              keyboardType="number-pad"
-              value={consumerNumber}
-              onChangeText={setConsumerNumber}
-            />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardAvoid}
+      >
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.backButton}
+          >
+            <ArrowLeft size={24} color="#172e73" />
+          </TouchableOpacity>
+          <Text style={styles.title}>Credit Card Payment</Text>
+        </View>
 
-            {!fetchedBill ? (
-              <TouchableOpacity
-                style={styles.fetchBillButton}
-                onPress={handleFetchBill}
-                disabled={loading}
-              >
-                {loading ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={styles.fetchBillButtonText}>Fetch Bill</Text>
-                )}
-              </TouchableOpacity>
-            ) : (
-              <View style={styles.billDetailsContainer}>
-                <Text style={styles.billDetailsText}>Bill Amount: ₹{fetchedBill.amount}</Text>
-                <Text style={styles.billDetailsText}>Due Date: {fetchedBill.dueDate}</Text>
-                 <TouchableOpacity
-                   style={styles.continueButton}
-                   onPress={handleContinue}
-                 >
-                   <Text style={styles.continueButtonText}>Continue to Pay</Text>
-                 </TouchableOpacity>
-              </View>
-            )}
-          </View>
-        ) : (
-           <View style={styles.pinContainer}>
-              <Text style={styles.pinLabel}>Enter UPI PIN to Pay</Text>
-              <Text style={styles.paymentAmountText}>Paying: ₹{billAmount}</Text>
-              <TextInput
-                style={styles.pinInput}
-                placeholder="Enter 6-digit PIN"
-                keyboardType="numeric"
-                maxLength={6}
-                secureTextEntry
-                value={upiPin}
-                onChangeText={setUpiPin}
+        <ScrollView style={styles.content}>
+          <View style={styles.cardContainer}>
+            {cardType !== 'unknown' ? (
+              <Image
+                source={getCardIcon()}
+                style={styles.cardIcon}
+                resizeMode="contain"
               />
-              <TouchableOpacity
-                style={styles.payButton}
-                onPress={handlePayment}
-                disabled={loading}
-              >
-                {loading ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={styles.payButtonText}>Pay ₹{billAmount}</Text>
-                )}
-              </TouchableOpacity>
-              <TouchableOpacity
-                 style={styles.cancelButton}
-                 onPress={() => setShowPinInput(false)}
-                 disabled={loading}
-              >
-                 <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
+            ) : (
+              <CreditCard size={40} color="#172e73" />
+            )}
+            <Text style={styles.cardTitle}>Enter Card Details</Text>
+          </View>
+
+          <View style={styles.form}>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Card Number</Text>
+              <TextInput
+                style={[styles.input, errors.cardNumber && styles.inputError]}
+                placeholder="1234 5678 9012 3456"
+                value={formData.cardNumber}
+                onChangeText={(value) => handleInputChange('cardNumber', value)}
+                keyboardType="numeric"
+                maxLength={19}
+              />
+              {errors.cardNumber && (
+                <Text style={styles.errorText}>{errors.cardNumber}</Text>
+              )}
             </View>
-        )}
-      </ScrollView>
+
+            <View style={styles.row}>
+              <View style={[styles.inputGroup, { flex: 1, marginRight: 10 }]}>
+                <Text style={styles.label}>Expiry Date</Text>
+                <TextInput
+                  style={[styles.input, errors.expiryDate && styles.inputError]}
+                  placeholder="MM/YY"
+                  value={formData.expiryDate}
+                  onChangeText={(value) => handleInputChange('expiryDate', value)}
+                  keyboardType="numeric"
+                  maxLength={5}
+                />
+                {errors.expiryDate && (
+                  <Text style={styles.errorText}>{errors.expiryDate}</Text>
+                )}
+              </View>
+
+              <View style={[styles.inputGroup, { flex: 1 }]}>
+                <Text style={styles.label}>CVV</Text>
+                <TextInput
+                  style={[styles.input, errors.cvv && styles.inputError]}
+                  placeholder="123"
+                  value={formData.cvv}
+                  onChangeText={(value) => handleInputChange('cvv', value)}
+                  keyboardType="numeric"
+                  maxLength={4}
+                  secureTextEntry
+                />
+                {errors.cvv && (
+                  <Text style={styles.errorText}>{errors.cvv}</Text>
+                )}
+              </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Amount (₹)</Text>
+              <TextInput
+                style={[styles.input, errors.amount && styles.inputError]}
+                placeholder="0.00"
+                value={formData.amount}
+                onChangeText={(value) => handleInputChange('amount', value)}
+                keyboardType="decimal-pad"
+              />
+              {errors.amount && (
+                <Text style={styles.errorText}>{errors.amount}</Text>
+              )}
+            </View>
+
+            <TouchableOpacity
+              style={styles.payButton}
+              onPress={handleSubmit}
+            >
+              <Text style={styles.payButtonText}>Pay Now</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -185,122 +259,86 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
   },
+  keyboardAvoid: {
+    flex: 1,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: '#f0f0f0',
   },
   backButton: {
     marginRight: 16,
   },
   title: {
     fontSize: 20,
-    fontWeight: '600',
+    fontFamily: 'Inter-Bold',
+    color: '#172e73',
   },
   content: {
     flex: 1,
     padding: 16,
   },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 12,
-    color: '#333',
+  cardContainer: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  cardIcon: {
+    width: 60,
+    height: 40,
+    marginBottom: 8,
+  },
+  cardTitle: {
+    fontSize: 18,
+    fontFamily: 'Inter-Bold',
+    color: '#172e73',
+    marginTop: 12,
+  },
+  form: {
+    gap: 16,
+  },
+  inputGroup: {
+    marginBottom: 8,
+  },
+  label: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    color: '#666',
+    marginBottom: 8,
   },
   input: {
     borderWidth: 1,
     borderColor: '#ddd',
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 8,
+    padding: 12,
     fontSize: 16,
-    marginBottom: 12,
+    fontFamily: 'Inter-Regular',
   },
-  fetchBillButton: {
-    backgroundColor: '#172e73',
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginTop: 12,
+  inputError: {
+    borderColor: '#DB0011',
   },
-  fetchBillButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+  errorText: {
+    color: '#DB0011',
+    fontSize: 12,
+    fontFamily: 'Inter-Regular',
+    marginTop: 4,
   },
-  billDetailsContainer: {
-    marginTop: 20,
-    padding: 16,
-    backgroundColor: '#f8f8f8',
-    borderRadius: 12,
-  },
-  billDetailsText: {
-    fontSize: 16,
-    marginBottom: 8,
-    color: '#333',
-  },
-   continueButton: {
-    backgroundColor: '#172e73',
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  continueButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  pinContainer: {
-    marginTop: 24,
-    alignItems: 'center',
-  },
-  pinLabel: {
-    fontSize: 16,
-    fontWeight: '500',
-    marginBottom: 8,
-    color: '#333',
-  },
-  paymentAmountText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    color: '#172e73',
-  },
-  pinInput: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 24,
-    width: '100%',
+  row: {
+    flexDirection: 'row',
+    gap: 16,
   },
   payButton: {
     backgroundColor: '#172e73',
+    borderRadius: 8,
     padding: 16,
-    borderRadius: 12,
     alignItems: 'center',
-    width: '100%',
-    marginBottom: 12,
+    marginTop: 24,
   },
   payButtonText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: '600',
-  },
-  cancelButton: {
-    backgroundColor: '#e0e0e0',
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    width: '100%',
-  },
-  cancelButtonText: {
-    color: '#333',
-    fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Inter-Bold',
   },
 }); 

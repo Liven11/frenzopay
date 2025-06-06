@@ -77,19 +77,45 @@ export default function ToMobileScreen() {
     try {
       // Simulate payment processing
       await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Navigate to success screen
-      router.push({
-        pathname: '/transaction-success',
-        params: { amount, recipient: selectedContact?.name },
-      });
+
+      // Simulate success or failure
+      const isSuccess = Math.random() > 0.3; 
+
+      if (isSuccess) {
+        router.push({
+          pathname: '/transaction-success',
+          params: {
+            type: 'transfer',
+            amount: amount,
+            recipient: selectedContact?.name || 'Unknown',
+            description: `Mobile payment to ${selectedContact?.phoneNumbers?.[0]?.number || 'Unknown'}`,
+          },
+        });
+      } else {
+        router.push({
+          pathname: '/transaction-failure',
+          params: {
+            type: 'transfer',
+            amount: amount,
+            recipient: selectedContact?.name || 'Unknown',
+            description: `Mobile payment to ${selectedContact?.phoneNumbers?.[0]?.number || 'Unknown'}`,
+            error: 'Transaction failed',
+          },
+        });
+      }
+
     } catch (error) {
-      // Simulate payment failure for demonstration purposes
-      const simulatedError = new Error("Insufficient balance"); // Replace with actual error handling
-      Alert.alert('Payment Failed', simulatedError.message);
+      console.error('Payment error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
       router.push({
         pathname: '/transaction-failure',
-        params: { message: simulatedError.message },
+        params: {
+          type: 'transfer',
+          amount: amount,
+          recipient: selectedContact?.name || 'Unknown',
+          description: `Mobile payment to ${selectedContact?.phoneNumbers?.[0]?.number || 'Unknown'}`,
+          error: errorMessage,
+        },
       });
     } finally {
       setLoading(false);

@@ -5,7 +5,6 @@ import { useFonts, Inter_400Regular, Inter_700Bold } from '@expo-google-fonts/in
 import * as SplashScreen from 'expo-splash-screen';
 import CustomNavBar from '../components/CustomNavBar';
 
-// Keep splash screen visible while resources load
 SplashScreen.preventAutoHideAsync();
 
 export default function TabsLayout() {
@@ -38,12 +37,12 @@ export default function TabsLayout() {
             title: 'Home',
           }}
         />
-        <Tabs.Screen
+        {/* <Tabs.Screen
           name="wallet"
           options={{
             title: 'Wallet',
           }}
-        />
+        /> */}
         <Tabs.Screen
           name="scan"
           options={{
@@ -57,7 +56,7 @@ export default function TabsLayout() {
           }}
         />
       </Tabs>
-      <StatusBar style="light" />
+      <StatusBar style="auto" />
     </>
   );
 }

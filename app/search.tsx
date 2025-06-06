@@ -10,6 +10,7 @@ interface SearchResult {
   title: string;
   description: string;
   amount?: string;
+  route: string;
 }
 
 export default function SearchScreen() {
@@ -17,15 +18,29 @@ export default function SearchScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
 
+  const availableScreens = [
+    { id: 1, type: 'service' as const, title: 'Mobile Recharge', description: 'Recharge your mobile number', route: '/mobile-recharge' },
+    { id: 2, type: 'service' as const, title: 'Electricity Bill', description: 'Pay your electricity bill', route: '/electricity-bill' },
+    { id: 3, type: 'service' as const, title: 'DTH Payments', description: 'Pay your DTH bills', route: '/dth-payments' },
+    { id: 4, type: 'service' as const, title: 'Fastag Recharge', description: 'Recharge your Fastag', route: '/fastag-recharge' },
+    { id: 5, type: 'service' as const, title: 'Digital FDs', description: 'Open digital fixed deposits', route: '/digital-fds' },
+    { id: 6, type: 'service' as const, title: 'Gold Loans', description: 'Apply for gold loans', route: '/gold-loans' },
+    { id: 7, type: 'service' as const, title: 'Insurance', description: 'Get insurance coverage', route: '/insurance' },
+    { id: 8, type: 'service' as const, title: 'Personal Loans', description: 'Apply for personal loans', route: '/personal-loans' },
+    { id: 9, type: 'transaction' as const, title: 'Send Money', description: 'Send money to anyone', route: '/send' },
+    { id: 10, type: 'transaction' as const, title: 'Receive Money', description: 'Receive money from anyone', route: '/receive' },
+    { id: 11, type: 'transaction' as const, title: 'To Mobile', description: 'Send money to mobile number', route: '/to-mobile' },
+    { id: 12, type: 'transaction' as const, title: 'To Bank Account', description: 'Send money to bank account', route: '/to-bank-account' },
+    { id: 13, type: 'transaction' as const, title: 'Credit Card Payment', description: 'Pay your credit card bill', route: '/creditcard-payment' },
+  ];
+
   const handleSearch = (query: string) => {
-    // Here you would typically make an API call to search your backend
-    // For now, we'll just simulate some results
-    const results: SearchResult[] = [
-      { id: 1, type: 'service', title: 'Mobile Recharge', description: 'Recharge your mobile number' },
-      { id: 2, type: 'service', title: 'Electricity Bill', description: 'Pay your electricity bill' },
-      { id: 3, type: 'transaction', title: 'Payment to John', description: 'Mobile transfer', amount: '₹500' },
-      { id: 4, type: 'transaction', title: 'Electricity Bill Payment', description: 'Monthly bill payment', amount: '₹1200' },
-    ].filter(item => 
+    if (!query.trim()) {
+      setSearchResults([]);
+      return;
+    }
+
+    const results = availableScreens.filter(item => 
       item.title.toLowerCase().includes(query.toLowerCase()) ||
       item.description.toLowerCase().includes(query.toLowerCase())
     );
@@ -70,17 +85,17 @@ export default function SearchScreen() {
             key={result.id}
             style={styles.resultItem}
             onPress={() => {
-              if (result.type === 'service') {
-                router.push(`/${result.title.toLowerCase().replace(/\s+/g, '-')}`);
-              }
+              router.push(result.route);
             }}
           >
             <View style={styles.resultContent}>
               <Text style={styles.resultTitle}>{result.title}</Text>
               <Text style={styles.resultDescription}>{result.description}</Text>
             </View>
-            {result.amount && (
-              <Text style={styles.resultAmount}>{result.amount}</Text>
+            {result.type === 'transaction' && (
+              <View style={styles.transactionIndicator}>
+                <Text style={styles.transactionText}>Transfer</Text>
+              </View>
             )}
           </TouchableOpacity>
         ))}
@@ -148,5 +163,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'Inter-Bold',
     color: '#172e73',
+  },
+  transactionIndicator: {
+    backgroundColor: '#e8f0fe',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  transactionText: {
+    color: '#172e73',
+    fontSize: 12,
+    fontFamily: 'Inter-Medium',
   },
 }); 

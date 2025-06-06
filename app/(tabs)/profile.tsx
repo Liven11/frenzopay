@@ -98,12 +98,6 @@ export default function ProfileScreen() {
       subtitle: 'Change your security PIN',
       onPress: () => router.push('/profile/security'),
     },
-    {
-      icon: <Smartphone size={24} color="#172e73" />,
-      title: 'Device Management',
-      subtitle: 'Manage connected devices',
-      onPress: () => router.push('/profile/devices'),
-    },
   ];
 
   const paymentSettings = [

@@ -47,13 +47,23 @@ export default function MobileRechargeScreen() {
       if (isSuccess) {
         router.push({
           pathname: '/transaction-success',
-          params: { amount: rechargeAmount, recipient: mobileNumber, description: 'Mobile Recharge' },
+          params: {
+            type: 'recharge',
+            amount: rechargeAmount,
+            recipient: mobileNumber,
+            description: 'Mobile Recharge',
+          },
         });
       } else {
-        const simulatedError = new Error("Operator server error"); // Replace with actual error details
         router.push({
           pathname: '/transaction-failure',
-          params: { message: simulatedError.message },
+          params: {
+            type: 'recharge',
+            amount: rechargeAmount,
+            recipient: mobileNumber,
+            description: 'Mobile Recharge',
+            error: 'Operator server error',
+          },
         });
       }
 
@@ -62,7 +72,13 @@ export default function MobileRechargeScreen() {
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
       router.push({
         pathname: '/transaction-failure',
-        params: { message: errorMessage },
+        params: {
+          type: 'recharge',
+          amount: rechargeAmount,
+          recipient: mobileNumber,
+          description: 'Mobile Recharge',
+          error: errorMessage,
+        },
       });
     } finally {
       setLoading(false);

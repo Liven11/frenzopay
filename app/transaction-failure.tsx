@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import {
   View,
   Text,
@@ -6,14 +6,29 @@ import {
   TouchableOpacity,
   SafeAreaView,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { XCircle, ArrowLeft } from 'lucide-react-native';
+import { useTransactions } from './context/TransactionContext';
 
 export default function TransactionFailureScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams();
+  const { addTransaction } = useTransactions();
+  const transactionAdded = useRef(false);
 
-  // You might receive error details via route params
-  // const errorDetails = router.params?.errorDetails;
+  React.useEffect(() => {
+    // Add failed transaction to history only once when component mounts
+    if (!transactionAdded.current && params.amount && params.recipient && params.type) {
+      addTransaction({
+        type: params.type as 'payment' | 'transfer' | 'recharge',
+        amount: Number(params.amount),
+        recipient: params.recipient as string,
+        status: 'failed',
+        description: params.description as string || 'Payment failed',
+      });
+      transactionAdded.current = true;
+    }
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -25,20 +40,21 @@ export default function TransactionFailureScreen() {
       </View>
       <View style={styles.content}>
         <XCircle size={80} color="red" />
-        <Text style={styles.statusText}>Payment Failed!</Text>
-        {/* Display error details here */}
-        {/* <Text style={styles.detailsText}>Reason: {errorDetails?.message}</Text> */}
+        <Text style={styles.statusText}>Payment Failed</Text>
+        {params.amount && (
+          <Text style={styles.detailsText}>Amount: ₹{params.amount}</Text>
+        )}
+        {params.recipient && (
+          <Text style={styles.detailsText}>To: {params.recipient}</Text>
+        )}
+        <Text style={styles.errorText}>
+          {params.error || 'Something went wrong. Please try again.'}
+        </Text>
         <TouchableOpacity
           style={styles.retryButton}
           onPress={() => router.back()}
         >
           <Text style={styles.retryButtonText}>Try Again</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.doneButton}
-          onPress={() => router.replace('/')}
-        >
-          <Text style={styles.doneButtonText}>Done</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -80,10 +96,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#555',
     marginTop: 8,
+  },
+  errorText: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 16,
     textAlign: 'center',
   },
   retryButton: {
-    backgroundColor: '#ffc107',
+    backgroundColor: '#172e73',
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
@@ -91,19 +112,6 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   retryButtonText: {
-    color: '#000',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  doneButton: {
-    backgroundColor: '#172e73',
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginTop: 16,
-    width: '100%',
-  },
-  doneButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',

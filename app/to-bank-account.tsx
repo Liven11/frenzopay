@@ -50,13 +50,23 @@ export default function ToBankAccountScreen() {
       if (isSuccess) {
         router.push({
           pathname: '/transaction-success',
-          params: { amount, recipient: accountHolderName || accountNumber },
+          params: {
+            type: 'transfer',
+            amount: amount,
+            recipient: accountHolderName || accountNumber,
+            description: `Bank transfer to ${ifscCode}`,
+          },
         });
       } else {
-        const simulatedError = new Error("Bank server unresponsive"); // Replace with actual error details
         router.push({
           pathname: '/transaction-failure',
-          params: { message: simulatedError.message },
+          params: {
+            type: 'transfer',
+            amount: amount,
+            recipient: accountHolderName || accountNumber,
+            description: `Bank transfer to ${ifscCode}`,
+            error: 'Bank server unresponsive',
+          },
         });
       }
 
@@ -65,7 +75,13 @@ export default function ToBankAccountScreen() {
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
       router.push({
         pathname: '/transaction-failure',
-        params: { message: errorMessage },
+        params: {
+          type: 'transfer',
+          amount: amount,
+          recipient: accountHolderName || accountNumber,
+          description: `Bank transfer to ${ifscCode}`,
+          error: errorMessage,
+        },
       });
     } finally {
       setLoading(false);

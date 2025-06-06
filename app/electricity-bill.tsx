@@ -70,13 +70,23 @@ export default function ElectricityBillScreen() {
       if (isSuccess) {
         router.push({
           pathname: '/transaction-success',
-          params: { amount: billAmount, recipient: 'Electricity Board' },
+          params: {
+            type: 'bill',
+            amount: billAmount,
+            recipient: 'Electricity Board',
+            description: `Electricity bill payment for consumer ${consumerNumber}`,
+          },
         });
       } else {
-        const simulatedError = new Error("Payment gateway error"); // Replace with actual error details
         router.push({
           pathname: '/transaction-failure',
-          params: { message: simulatedError.message },
+          params: {
+            type: 'bill',
+            amount: billAmount,
+            recipient: 'Electricity Board',
+            description: `Electricity bill payment for consumer ${consumerNumber}`,
+            error: 'Payment gateway error',
+          },
         });
       }
 
@@ -85,7 +95,13 @@ export default function ElectricityBillScreen() {
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
       router.push({
         pathname: '/transaction-failure',
-        params: { message: errorMessage },
+        params: {
+          type: 'bill',
+          amount: billAmount,
+          recipient: 'Electricity Board',
+          description: `Electricity bill payment for consumer ${consumerNumber}`,
+          error: errorMessage,
+        },
       });
     } finally {
       setLoading(false);

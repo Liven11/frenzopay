@@ -1,36 +1,12 @@
 import React from 'react';
 import { StyleSheet, View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { CreditCard, ArrowDownLeft, ArrowUpRight, ArrowLeft } from 'lucide-react-native';
+import { CreditCard, ArrowLeft } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
-
-const router = useRouter();
-
-const TransactionItem = ({ type, amount, date, category }) => (
-  <View style={styles.transactionItem}>
-    <View style={[styles.iconContainer, { backgroundColor: type === 'credit' ? '#17C261' : '#DB0011' }]}>
-      {type === 'credit' ? 
-        <ArrowDownLeft size={20} color="white" /> : 
-        <ArrowUpRight size={20} color="white" />
-      }
-    </View>
-    <View style={styles.transactionDetails}>
-      <Text style={styles.transactionCategory}>{category}</Text>
-      <Text style={styles.transactionDate}>{date}</Text>
-    </View>
-    <Text style={[styles.transactionAmount, { color: type === 'credit' ? '#17C261' : '#DB0011' }]}>
-      {type === 'credit' ? '+' : '-'}₹{amount}
-    </Text>
-  </View>
-);
+import RecentTransactions from './components/RecentTransactions';
 
 export default function WalletScreen() {
-  const transactions = [
-    { id: 1, type: 'debit', amount: '2,500', date: 'Today, 2:45 PM', category: 'Shopping' },
-    { id: 2, type: 'credit', amount: '15,000', date: 'Yesterday, 6:30 PM', category: 'Salary' },
-    { id: 3, type: 'debit', amount: '800', date: 'Jan 15, 1:20 PM', category: 'Food' },
-    { id: 4, type: 'credit', amount: '5,000', date: 'Jan 14, 11:45 AM', category: 'Refund' },
-  ];
+  const router = useRouter();
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -61,12 +37,7 @@ export default function WalletScreen() {
           </View>
         </View>
 
-        <View style={styles.transactionsSection}>
-          <Text style={styles.sectionTitle}>Recent Activity</Text>
-          {transactions.map(transaction => (
-            <TransactionItem key={transaction.id} {...transaction} />
-          ))}
-        </View>
+        <RecentTransactions />
       </ScrollView>
     </SafeAreaView>
   );

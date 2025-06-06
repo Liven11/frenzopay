@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import {
   View,
   Text,
@@ -6,14 +6,29 @@ import {
   TouchableOpacity,
   SafeAreaView,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { CheckCircle, ArrowLeft } from 'lucide-react-native';
+import { useTransactions } from './context/TransactionContext';
 
 export default function TransactionSuccessScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams();
+  const { addTransaction } = useTransactions();
+  const transactionAdded = useRef(false);
 
-  // You might receive transaction details via route params
-  // const transactionDetails = router.params?.transactionDetails;
+  React.useEffect(() => {
+    // Add transaction to history only once when component mounts
+    if (!transactionAdded.current && params.amount && params.recipient && params.type) {
+      addTransaction({
+        type: params.type as 'payment' | 'transfer' | 'recharge',
+        amount: Number(params.amount),
+        recipient: params.recipient as string,
+        status: 'success',
+        description: params.description as string || 'Payment successful',
+      });
+      transactionAdded.current = true;
+    }
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -26,9 +41,12 @@ export default function TransactionSuccessScreen() {
       <View style={styles.content}>
         <CheckCircle size={80} color="green" />
         <Text style={styles.statusText}>Payment Successful!</Text>
-        {/* Display transaction details here */}
-        {/* <Text style={styles.detailsText}>Amount: ₹{transactionDetails?.amount}</Text> */}
-        {/* <Text style={styles.detailsText}>To: {transactionDetails?.recipient}</Text> */}
+        {params.amount && (
+          <Text style={styles.detailsText}>Amount: ₹{params.amount}</Text>
+        )}
+        {params.recipient && (
+          <Text style={styles.detailsText}>To: {params.recipient}</Text>
+        )}
         <TouchableOpacity
           style={styles.doneButton}
           onPress={() => router.replace('/')}
