@@ -17,6 +17,7 @@
     ],
     "ios": {
       "supportsTablet": true,
+      "bundleIdentifier": "com.frenzopay.app",
       "infoPlist": {
         "NSCameraUsageDescription": "We need access to your camera to scan QR codes for payments",
         "NSLocationWhenInUseUsageDescription": "We need your location to provide location-based services",
