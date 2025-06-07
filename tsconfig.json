@@ -10,7 +10,8 @@
     "skipLibCheck": true,
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "types": ["react", "react-dom"]
   },
   "extends": "expo/tsconfig.base",
   "include": [
