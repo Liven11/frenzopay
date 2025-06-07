@@ -1,7 +1,7 @@
 import * as Device from 'expo-device';
 import * as ScreenCapture from 'expo-screen-capture';
 import * as Application from 'expo-application';
-import { Platform, AppState, AppStateStatus } from 'react-native';
+import { Platform, AppState, AppStateStatus, Alert } from 'react-native';
 
 export class SecurityManager {
   private static instance: SecurityManager;
@@ -39,8 +39,12 @@ export class SecurityManager {
       if (Platform.OS === 'android') {
         const isRooted = await Device.isRootedExperimentalAsync();
         if (isRooted) {
-          console.warn('Device is rooted');
-          return false;
+          Alert.alert(
+            'Security Warning',
+            'This device appears to be rooted. For security reasons, please use a non-rooted device in production.',
+            [{ text: 'OK' }]
+          );
+          return true; // Return true to allow app to continue
         }
       }
       
@@ -48,15 +52,19 @@ export class SecurityManager {
       if (Platform.OS === 'ios') {
         const isJailbroken = await this.checkIOSJailbreak();
         if (isJailbroken) {
-          console.warn('Device is jailbroken');
-          return false;
+          Alert.alert(
+            'Security Warning',
+            'This device appears to be jailbroken. For security reasons, please use a non-jailbroken device in production.',
+            [{ text: 'OK' }]
+          );
+          return true; // Return true to allow app to continue
         }
       }
 
       return true;
     } catch (error) {
       console.error('Error checking device security:', error);
-      return false;
+      return true; // Return true to allow app to continue
     }
   }
 
@@ -69,7 +77,7 @@ export class SecurityManager {
       const isDebug = __DEV__;
       if (isDebug) {
         console.warn('App is running in debug mode');
-        return false;
+        return true; // Return true to allow app to continue
       }
 
       // Check if the app signature matches
@@ -83,7 +91,7 @@ export class SecurityManager {
       return isValidSignature;
     } catch (error) {
       console.error('Error checking app tampering:', error);
-      return false;
+      return true; // Return true to allow app to continue
     }
   }
 

@@ -21,7 +21,8 @@
         "NSCameraUsageDescription": "We need access to your camera to scan QR codes for payments",
         "NSLocationWhenInUseUsageDescription": "We need your location to provide location-based services",
         "NSContactsUsageDescription": "We need access to your contacts to help you send money to your contacts"
-      }
+      },
+      "bundleIdentifier": "com.livedangi0.frenzopay"
     },
     "android": {
       "adaptiveIcon": {
