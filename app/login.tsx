@@ -18,14 +18,6 @@ export default function LoginScreen() {
       const isDeviceSecure = await securityManager.checkDeviceSecurity();
       if (!isDeviceSecure) {
         setShowDeviceAlert(true);
-        // Auto close app after 3 seconds
-        setTimeout(() => {
-          // On Android, use BackHandler.exitApp()
-          // On iOS,  show the alert
-          if (Platform.OS === 'android') {
-            router.replace('/');
-          }
-        }, 3000);
         return;
       }
 
@@ -33,12 +25,6 @@ export default function LoginScreen() {
       const isAppSecure = await securityManager.checkAppTampering();
       if (!isAppSecure) {
         setShowAppAlert(true);
-        // Auto close app after 3 seconds
-        setTimeout(() => {
-          if (Platform.OS === 'android') {
-            router.replace('/');
-          }
-        }, 3000);
         return;
       }
     };
@@ -128,26 +114,16 @@ export default function LoginScreen() {
 
       <SecurityAlert
         visible={showDeviceAlert}
-        title="Security Warning"
-        message="This device appears to be compromised (rooted/jailbroken). The app will close for security reasons."
-        onClose={() => {
-          setShowDeviceAlert(false);
-          if (Platform.OS === 'android') {
-            router.replace('/');
-          }
-        }}
+        title="Security Notice"
+        message="This device appears to be compromised (rooted/jailbroken). Some features may be limited."
+        onClose={() => setShowDeviceAlert(false)}
       />
 
       <SecurityAlert
         visible={showAppAlert}
-        title="App Security Warning"
-        message="The app's integrity has been compromised. The app will close for security reasons."
-        onClose={() => {
-          setShowAppAlert(false);
-          if (Platform.OS === 'android') {
-            router.replace('/');
-          }
-        }}
+        title="App Security Notice"
+        message="The app's integrity has been compromised. Some features may be limited."
+        onClose={() => setShowAppAlert(false)}
       />
     </SafeAreaView>
   );

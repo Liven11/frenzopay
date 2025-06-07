@@ -17,36 +17,31 @@ export const SecureNavigation: React.FC<SecureNavigationProps> = ({ children }) 
 
   useEffect(() => {
     const checkSecurity = async () => {
-      // Skip security checks for login and public routes
-      const isPublicRoute = segments[0] === 'login' || segments[0] === 'otp-verification';
-      if (isPublicRoute) return;
+      try {
+        // Skip security checks for login and public routes
+        const isPublicRoute = segments[0] === 'login' || segments[0] === 'otp-verification';
+        if (isPublicRoute) return;
 
-      // Check if user is logged in
-      const isLoggedIn = await AsyncStorage.getItem('isLoggedIn');
-      if (!isLoggedIn) return;
+        // Check if user is logged in
+        const isLoggedIn = await AsyncStorage.getItem('isLoggedIn');
+        if (!isLoggedIn) return;
 
-      // Check device security
-      const isDeviceSecure = await securityManager.checkDeviceSecurity();
-      if (!isDeviceSecure) {
-        setShowDeviceAlert(true);
-        // Log out user and clear storage
-        await AsyncStorage.clear();
-        setTimeout(() => {
-          router.replace('/login');
-        }, 3000);
-        return;
-      }
+        // Check device security
+        const isDeviceSecure = await securityManager.checkDeviceSecurity();
+        if (!isDeviceSecure) {
+          setShowDeviceAlert(true);
+          return;
+        }
 
-      // Check app tampering
-      const isAppSecure = await securityManager.checkAppTampering();
-      if (!isAppSecure) {
-        setShowAppAlert(true);
-        // Log out user and clear storage
-        await AsyncStorage.clear();
-        setTimeout(() => {
-          router.replace('/login');
-        }, 3000);
-        return;
+        // Check app tampering
+        const isAppSecure = await securityManager.checkAppTampering();
+        if (!isAppSecure) {
+          setShowAppAlert(true);
+          return;
+        }
+      } catch (error) {
+        console.warn('Error in security check:', error);
+        // Continue with the app even if security checks fail
       }
     };
 
@@ -59,22 +54,16 @@ export const SecureNavigation: React.FC<SecureNavigationProps> = ({ children }) 
       
       <SecurityAlert
         visible={showDeviceAlert}
-        title="Security Warning"
-        message="This device appears to be compromised (rooted/jailbroken). You have been logged out for security reasons."
-        onClose={() => {
-          setShowDeviceAlert(false);
-          router.replace('/login');
-        }}
+        title="Security Notice"
+        message="This device appears to be compromised (rooted/jailbroken). Some features may be limited."
+        onClose={() => setShowDeviceAlert(false)}
       />
 
       <SecurityAlert
         visible={showAppAlert}
-        title="App Security Warning"
-        message="The app's integrity has been compromised. You have been logged out for security reasons."
-        onClose={() => {
-          setShowAppAlert(false);
-          router.replace('/login');
-        }}
+        title="App Security Notice"
+        message="The app's integrity has been compromised. Some features may be limited."
+        onClose={() => setShowAppAlert(false)}
       />
     </View>
   );

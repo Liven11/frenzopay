@@ -62,14 +62,17 @@ function RootLayoutNav() {
   useEffect(() => {
     const setupScreenshotPrevention = async () => {
       if (isAuthenticated) {
-        // Multiple attempts to ensure screenshot prevention is enabled
-        for (let i = 0; i < 3; i++) {
+        try {
           await securityManager.preventScreenshots();
-          // Add a small delay between attempts
-          await new Promise(resolve => setTimeout(resolve, 100));
+        } catch (error) {
+          console.warn('Failed to prevent screenshots:', error);
         }
       } else {
-        await securityManager.allowScreenshots();
+        try {
+          await securityManager.allowScreenshots();
+        } catch (error) {
+          console.warn('Failed to allow screenshots:', error);
+        }
       }
     };
 
@@ -78,9 +81,11 @@ function RootLayoutNav() {
     // Set up an interval to periodically re-enable screenshot prevention
     const interval = setInterval(() => {
       if (isAuthenticated) {
-        securityManager.preventScreenshots();
+        securityManager.preventScreenshots().catch(error => {
+          console.warn('Failed to prevent screenshots:', error);
+        });
       }
-    }, 5000); // Check every 5 seconds
+    }, 30000); // Check every 30 seconds instead of 5
 
     return () => {
       clearInterval(interval);

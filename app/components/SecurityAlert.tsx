@@ -1,6 +1,5 @@
 import React from 'react';
 import { Modal, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { useRouter } from 'expo-router';
 
 interface SecurityAlertProps {
   visible: boolean;
@@ -15,29 +14,18 @@ export const SecurityAlert: React.FC<SecurityAlertProps> = ({
   message,
   onClose,
 }) => {
-  const router = useRouter();
-
-  const handleClose = () => {
-    if (onClose) {
-      onClose();
-    } else {
-      // Default behavior: exit the app
-      router.replace('/');
-    }
-  };
-
   return (
     <Modal
       visible={visible}
       transparent
       animationType="fade"
-      onRequestClose={handleClose}
+      onRequestClose={onClose}
     >
       <View style={styles.overlay}>
         <View style={styles.alertContainer}>
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.message}>{message}</Text>
-          <TouchableOpacity style={styles.button} onPress={handleClose}>
+          <TouchableOpacity style={styles.button} onPress={onClose}>
             <Text style={styles.buttonText}>OK</Text>
           </TouchableOpacity>
         </View>
@@ -55,34 +43,26 @@ const styles = StyleSheet.create({
   },
   alertContainer: {
     backgroundColor: 'white',
-    borderRadius: 12,
+    borderRadius: 10,
     padding: 20,
     width: '80%',
     maxWidth: 400,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
   },
   title: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
-    color: '#FF3B30',
     marginBottom: 10,
-    textAlign: 'center',
+    color: '#172e73',
   },
   message: {
     fontSize: 16,
-    color: '#333',
     marginBottom: 20,
-    textAlign: 'center',
-    lineHeight: 22,
+    color: '#333',
   },
   button: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#172e73',
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 5,
     alignItems: 'center',
   },
   buttonText: {

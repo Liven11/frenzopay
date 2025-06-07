@@ -41,7 +41,12 @@
         "android.permission.READ_CONTACTS",
         "android.permission.WRITE_CONTACTS"
       ],
-      "package": "com.livedangi0.frenzopay"
+      "package": "com.livedangi0.frenzopay",
+      "versionCode": 1,
+      "allowBackup": true,
+      "softwareKeyboardLayoutMode": "pan",
+      "edgeToEdgeEnabled": true,
+      "userInterfaceStyle": "automatic"
     },
     "plugins": [
       "expo-camera",
