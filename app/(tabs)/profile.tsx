@@ -1,12 +1,18 @@
-import React from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Switch, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { 
   User, Settings, Bell, Shield, CreditCard, 
-  HelpCircle, LogOut, ChevronRight 
+  HelpCircle, LogOut, ChevronRight, Lock,
+  Smartphone, Fingerprint, CreditCard as CardIcon,
+  Building2, MessageCircle, Globe, Eye
 } from 'lucide-react-native';
+import * as LocalAuthentication from 'expo-local-authentication';
+import { useRouter } from 'expo-router';
+import { useUser } from '../context/UserContext';
+import { useAuth } from '../context/AuthContext';
 
-const ProfileItem = ({ icon, title, subtitle, onPress }) => (
+const ProfileItem = ({ icon, title, subtitle, onPress, rightElement }) => (
   <TouchableOpacity style={styles.profileItem} onPress={onPress}>
     <View style={styles.profileItemIcon}>
       {icon}
@@ -15,38 +21,169 @@ const ProfileItem = ({ icon, title, subtitle, onPress }) => (
       <Text style={styles.profileItemTitle}>{title}</Text>
       {subtitle && <Text style={styles.profileItemSubtitle}>{subtitle}</Text>}
     </View>
-    <ChevronRight size={20} color="#666" />
+    {rightElement || <ChevronRight size={20} color="#666" />}
   </TouchableOpacity>
 );
 
+const SectionHeader = ({ title }) => (
+  <Text style={styles.sectionHeader}>{title}</Text>
+);
+
 export default function ProfileScreen() {
-  const profileItems = [
+  const router = useRouter();
+  const { userData } = useUser();
+  const { logout, isBiometricEnabled, toggleBiometric, checkBiometricSupport, authenticateWithBiometrics } = useAuth();
+  const fullName = `${userData.firstName} ${userData.lastName}`.trim() || 'User';
+  const [faceIdEnabled, setFaceIdEnabled] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [darkModeEnabled, setDarkModeEnabled] = useState(false);
+
+  const checkBiometricAvailability = async () => {
+    const compatible = await checkBiometricSupport();
+    if (compatible) {
+      setFaceIdEnabled(isBiometricEnabled);
+    }
+  };
+
+  React.useEffect(() => {
+    checkBiometricAvailability();
+  }, [isBiometricEnabled]);
+
+  const handleBiometricToggle = async (value: boolean) => {
+    try {
+      if (value) {
+        const compatible = await checkBiometricSupport();
+        if (!compatible) {
+          Alert.alert(
+            'Not Available',
+            'Biometric authentication is not available on this device.',
+            [{ text: 'OK' }]
+          );
+          return;
+        }
+        // Test authentication before enabling
+        const authenticated = await authenticateWithBiometrics();
+        if (!authenticated) {
+          Alert.alert(
+            'Authentication Failed',
+            'Please authenticate to enable Face ID/Touch ID.',
+            [{ text: 'OK' }]
+          );
+          return;
+        }
+      }
+      await toggleBiometric(value);
+      setFaceIdEnabled(value);
+    } catch (error) {
+      Alert.alert(
+        'Error',
+        'Failed to toggle biometric authentication. Please try again.',
+        [{ text: 'OK' }]
+      );
+    }
+  };
+
+  const accountSettings = [
     {
-      icon: <Settings size={24} color="#172e73" />,
-      title: 'Account Settings',
-      subtitle: 'Privacy, security, and language',
+      icon: <User size={24} color="#172e73" />,
+      title: 'Personal Information',
+      subtitle: 'Update your profile details',
+      onPress: () => router.push('/profile/personal-info'),
     },
     {
-      icon: <Bell size={24} color="#172e73" />,
-      title: 'Notifications',
-      subtitle: 'Customize your alerts',
+      icon: <Globe size={24} color="#172e73" />,
+      title: 'Language',
+      subtitle: 'English (US)',
+      onPress: () => router.push('/profile/language'),
     },
     {
-      icon: <Shield size={24} color="#172e73" />,
-      title: 'Security',
-      subtitle: 'Face ID, PIN & password',
-    },
-    {
-      icon: <CreditCard size={24} color="#172e73" />,
-      title: 'Payment Methods',
-      subtitle: 'Connected cards and accounts',
-    },
-    {
-      icon: <HelpCircle size={24} color="#172e73" />,
-      title: 'Help & Support',
-      subtitle: 'FAQs and contact information',
+      icon: <Eye size={24} color="#172e73" />,
+      title: 'Appearance',
+      subtitle: 'Light mode',
+      rightElement: (
+        <Switch
+          value={darkModeEnabled}
+          onValueChange={setDarkModeEnabled}
+          trackColor={{ false: '#767577', true: '#81b0ff' }}
+          thumbColor={darkModeEnabled ? '#172e73' : '#f4f3f4'}
+        />
+      ),
     },
   ];
+
+  const securitySettings = [
+    {
+      icon: <Fingerprint size={24} color="#172e73" />,
+      title: 'Face ID / Touch ID',
+      subtitle: 'Use biometric authentication',
+      rightElement: (
+        <Switch
+          value={faceIdEnabled}
+          onValueChange={handleBiometricToggle}
+          trackColor={{ false: '#767577', true: '#81b0ff' }}
+          thumbColor={faceIdEnabled ? '#172e73' : '#f4f3f4'}
+        />
+      ),
+    },
+    {
+      icon: <Lock size={24} color="#172e73" />,
+      title: 'PIN & Password',
+      subtitle: 'Change your security PIN',
+      onPress: () => router.push('/profile/security'),
+    },
+  ];
+
+  const paymentSettings = [
+    {
+      icon: <CardIcon size={24} color="#172e73" />,
+      title: 'Cards',
+      subtitle: 'Manage your cards',
+      onPress: () => router.push('/profile/cards'),
+      rightElement: null,
+    },
+    {
+      icon: <Building2 size={24} color="#172e73" />,
+      title: 'Bank Accounts',
+      subtitle: 'Connected bank accounts',
+      onPress: () => router.push('/profile/bank-accounts'),
+      rightElement: null,
+    },
+  ];
+
+  const supportSettings = [
+    {
+      icon: <HelpCircle size={24} color="#172e73" />,
+      title: 'Help Center',
+      subtitle: 'FAQs and guides',
+      onPress: () => router.push('/profile/help'),
+      rightElement: null,
+    },
+    {
+      icon: <MessageCircle size={24} color="#172e73" />,
+      title: 'Contact Support',
+      subtitle: 'Get in touch with us',
+      onPress: () => router.push('/profile/contact'),
+      rightElement: null,
+    },
+  ];
+
+  const handleLogout = () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: () => logout(),
+        },
+      ],
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -55,26 +192,76 @@ export default function ProfileScreen() {
           <View style={styles.avatarContainer}>
             <User size={40} color="#172e73" />
           </View>
-          <Text style={styles.name}>John Doe</Text>
-          <Text style={styles.email}>john.doe@example.com</Text>
-          <TouchableOpacity style={styles.editButton}>
+          <Text style={styles.name}>{fullName}</Text>
+          <Text style={styles.email}>{userData.email}</Text>
+          <TouchableOpacity 
+            style={styles.editButton}
+            onPress={() => router.push('/profile/personal-info')}
+          >
             <Text style={styles.editButtonText}>Edit Profile</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.section}>
-          {profileItems.map((item, index) => (
+          <SectionHeader title="ACCOUNT" />
+          {accountSettings.map((item, index) => (
             <ProfileItem
               key={index}
               icon={item.icon}
               title={item.title}
               subtitle={item.subtitle}
-              onPress={() => {}}
+              onPress={item.onPress}
+              rightElement={item.rightElement}
             />
           ))}
         </View>
 
-        <TouchableOpacity style={styles.logoutButton}>
+        <View style={styles.section}>
+          <SectionHeader title="SECURITY" />
+          {securitySettings.map((item, index) => (
+            <ProfileItem
+              key={index}
+              icon={item.icon}
+              title={item.title}
+              subtitle={item.subtitle}
+              onPress={item.onPress}
+              rightElement={item.rightElement}
+            />
+          ))}
+        </View>
+
+        <View style={styles.section}>
+          <SectionHeader title="PAYMENT METHODS" />
+          {paymentSettings.map((item, index) => (
+            <ProfileItem
+              key={index}
+              icon={item.icon}
+              title={item.title}
+              subtitle={item.subtitle}
+              onPress={item.onPress}
+              rightElement={item.rightElement}
+            />
+          ))}
+        </View>
+
+        <View style={styles.section}>
+          <SectionHeader title="SUPPORT" />
+          {supportSettings.map((item, index) => (
+            <ProfileItem
+              key={index}
+              icon={item.icon}
+              title={item.title}
+              subtitle={item.subtitle}
+              onPress={item.onPress}
+              rightElement={item.rightElement}
+            />
+          ))}
+        </View>
+
+        <TouchableOpacity 
+          style={styles.logoutButton}
+          onPress={handleLogout}
+        >
           <LogOut size={24} color="#DB0011" />
           <Text style={styles.logoutText}>Log Out</Text>
         </TouchableOpacity>
@@ -135,6 +322,13 @@ const styles = StyleSheet.create({
   },
   section: {
     padding: 20,
+  },
+  sectionHeader: {
+    fontSize: 14,
+    fontFamily: 'Inter-Bold',
+    color: '#666',
+    marginBottom: 10,
+    textTransform: 'uppercase',
   },
   profileItem: {
     flexDirection: 'row',

@@ -4,11 +4,11 @@
     "slug": "frenzopay",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/frenzopay-logo.png",
     "userInterfaceStyle": "light",
     "scheme": "frenzopay",
     "splash": {
-      "image": "./assets/splash.png",
+      "image": "./assets/frenzopay-logo.png",
       "resizeMode": "contain",
       "backgroundColor": "#172e73"
     },
@@ -19,23 +19,38 @@
       "supportsTablet": true,
       "infoPlist": {
         "NSCameraUsageDescription": "We need access to your camera to scan QR codes for payments",
-        "NSLocationWhenInUseUsageDescription": "We need your location to provide location-based services"
+        "NSLocationWhenInUseUsageDescription": "We need your location to provide location-based services",
+        "NSContactsUsageDescription": "We need access to your contacts to help you send money to your contacts"
       }
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/frenzopay-logo.png",
         "backgroundColor": "#172e73"
       },
       "permissions": [
         "CAMERA",
         "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION"
-      ]
+        "ACCESS_COARSE_LOCATION",
+        "READ_CONTACTS",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.READ_CONTACTS",
+        "android.permission.WRITE_CONTACTS"
+      ],
+      "package": "com.livedangi0.frenzopay"
     },
     "plugins": [
       "expo-camera",
-      "expo-location"
-    ]
+      "expo-location",
+      "expo-contacts"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "10afed93-a72b-48dc-b0da-aaa52aaa65da"
+      }
+    }
   }
 }

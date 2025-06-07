@@ -1,13 +1,9 @@
 {
   "files": [],
-  "references": [
-    {
-      "path": "./tsconfig.app.json"
-    },
-    {
-      "path": "./tsconfig.node.json"
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["./*"]
     }
-  ],
-  "compilerOptions": {},
+  },
   "extends": "expo/tsconfig.base"
 }
