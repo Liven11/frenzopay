@@ -19,4 +19,7 @@ config.transformer = {
   babelTransformerPath: require.resolve('metro-react-native-babel-transformer'),
 };
 
+// Add support for TypeScript
+config.resolver.sourceExts.push('ts', 'tsx');
+
 module.exports = config;
