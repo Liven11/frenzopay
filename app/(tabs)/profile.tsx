@@ -1,27 +1,18 @@
-import React, { useState } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Switch, Alert } from 'react-native';
+import React from 'react';
+import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { 
-  User, Settings, Bell, Shield, CreditCard, 
-  HelpCircle, LogOut, ChevronRight, Lock,
-  Smartphone, Fingerprint, CreditCard as CardIcon,
-  Building2, MessageCircle, Globe, Eye
-} from 'lucide-react-native';
-import * as LocalAuthentication from 'expo-local-authentication';
 import { useRouter } from 'expo-router';
-import { useUser } from '../context/UserContext';
-import { useAuth } from '../context/AuthContext';
 
-const ProfileItem = ({ icon, title, subtitle, onPress, rightElement }) => (
+const ProfileItem = ({ title, subtitle, onPress }) => (
   <TouchableOpacity style={styles.profileItem} onPress={onPress}>
     <View style={styles.profileItemIcon}>
-      {icon}
+      <View style={styles.iconPlaceholder} />
     </View>
     <View style={styles.profileItemContent}>
       <Text style={styles.profileItemTitle}>{title}</Text>
       {subtitle && <Text style={styles.profileItemSubtitle}>{subtitle}</Text>}
     </View>
-    {rightElement || <ChevronRight size={20} color="#666" />}
+    <View style={styles.chevron} />
   </TouchableOpacity>
 );
 
@@ -31,173 +22,77 @@ const SectionHeader = ({ title }) => (
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { userData } = useUser();
-  const { logout, isBiometricEnabled, toggleBiometric, checkBiometricSupport, authenticateWithBiometrics } = useAuth();
-  const fullName = `${userData.firstName} ${userData.lastName}`.trim() || 'User';
-  const [faceIdEnabled, setFaceIdEnabled] = useState(false);
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [darkModeEnabled, setDarkModeEnabled] = useState(false);
-
-  const checkBiometricAvailability = async () => {
-    const compatible = await checkBiometricSupport();
-    if (compatible) {
-      setFaceIdEnabled(isBiometricEnabled);
-    }
-  };
-
-  React.useEffect(() => {
-    checkBiometricAvailability();
-  }, [isBiometricEnabled]);
-
-  const handleBiometricToggle = async (value: boolean) => {
-    try {
-      if (value) {
-        const compatible = await checkBiometricSupport();
-        if (!compatible) {
-          Alert.alert(
-            'Not Available',
-            'Biometric authentication is not available on this device.',
-            [{ text: 'OK' }]
-          );
-          return;
-        }
-        // Test authentication before enabling
-        const authenticated = await authenticateWithBiometrics();
-        if (!authenticated) {
-          Alert.alert(
-            'Authentication Failed',
-            'Please authenticate to enable Face ID/Touch ID.',
-            [{ text: 'OK' }]
-          );
-          return;
-        }
-      }
-      await toggleBiometric(value);
-      setFaceIdEnabled(value);
-    } catch (error) {
-      Alert.alert(
-        'Error',
-        'Failed to toggle biometric authentication. Please try again.',
-        [{ text: 'OK' }]
-      );
-    }
-  };
 
   const accountSettings = [
     {
-      icon: <User size={24} color="#172e73" />,
       title: 'Personal Information',
       subtitle: 'Update your profile details',
-      onPress: () => router.push('/profile/personal-info'),
+      onPress: () => console.log('Navigate to personal info'),
     },
     {
-      icon: <Globe size={24} color="#172e73" />,
       title: 'Language',
       subtitle: 'English (US)',
-      onPress: () => router.push('/profile/language'),
+      onPress: () => console.log('Navigate to language'),
     },
     {
-      icon: <Eye size={24} color="#172e73" />,
       title: 'Appearance',
       subtitle: 'Light mode',
-      rightElement: (
-        <Switch
-          value={darkModeEnabled}
-          onValueChange={setDarkModeEnabled}
-          trackColor={{ false: '#767577', true: '#81b0ff' }}
-          thumbColor={darkModeEnabled ? '#172e73' : '#f4f3f4'}
-        />
-      ),
+      onPress: () => console.log('Navigate to appearance'),
     },
   ];
 
   const securitySettings = [
     {
-      icon: <Fingerprint size={24} color="#172e73" />,
       title: 'Face ID / Touch ID',
       subtitle: 'Use biometric authentication',
-      rightElement: (
-        <Switch
-          value={faceIdEnabled}
-          onValueChange={handleBiometricToggle}
-          trackColor={{ false: '#767577', true: '#81b0ff' }}
-          thumbColor={faceIdEnabled ? '#172e73' : '#f4f3f4'}
-        />
-      ),
+      onPress: () => console.log('Toggle biometric'),
     },
     {
-      icon: <Lock size={24} color="#172e73" />,
       title: 'PIN & Password',
       subtitle: 'Change your security PIN',
-      onPress: () => router.push('/profile/security'),
+      onPress: () => console.log('Navigate to security'),
     },
   ];
 
   const paymentSettings = [
     {
-      icon: <CardIcon size={24} color="#172e73" />,
       title: 'Cards',
       subtitle: 'Manage your cards',
-      onPress: () => router.push('/profile/cards'),
-      rightElement: null,
+      onPress: () => console.log('Navigate to cards'),
     },
     {
-      icon: <Building2 size={24} color="#172e73" />,
       title: 'Bank Accounts',
       subtitle: 'Connected bank accounts',
-      onPress: () => router.push('/profile/bank-accounts'),
-      rightElement: null,
+      onPress: () => console.log('Navigate to bank accounts'),
     },
   ];
 
   const supportSettings = [
     {
-      icon: <HelpCircle size={24} color="#172e73" />,
       title: 'Help Center',
       subtitle: 'FAQs and guides',
-      onPress: () => router.push('/profile/help'),
-      rightElement: null,
+      onPress: () => console.log('Navigate to help'),
     },
     {
-      icon: <MessageCircle size={24} color="#172e73" />,
       title: 'Contact Support',
       subtitle: 'Get in touch with us',
-      onPress: () => router.push('/profile/contact'),
-      rightElement: null,
+      onPress: () => console.log('Navigate to contact'),
     },
   ];
-
-  const handleLogout = () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: () => logout(),
-        },
-      ],
-    );
-  };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView style={styles.content}>
         <View style={styles.header}>
           <View style={styles.avatarContainer}>
-            <User size={40} color="#172e73" />
+            <Image
+              source={{ uri: 'https://images.pexels.com/photos/927022/pexels-photo-927022.jpeg?auto=compress&cs=tinysrgb&w=100' }}
+              style={styles.avatarImage}
+            />
           </View>
-          <Text style={styles.name}>{fullName}</Text>
-          <Text style={styles.email}>{userData.email}</Text>
-          <TouchableOpacity 
-            style={styles.editButton}
-            onPress={() => router.push('/profile/personal-info')}
-          >
+          <Text style={styles.name}>John Doe</Text>
+          <Text style={styles.email}>john.doe@example.com</Text>
+          <TouchableOpacity style={styles.editButton}>
             <Text style={styles.editButtonText}>Edit Profile</Text>
           </TouchableOpacity>
         </View>
@@ -207,11 +102,9 @@ export default function ProfileScreen() {
           {accountSettings.map((item, index) => (
             <ProfileItem
               key={index}
-              icon={item.icon}
               title={item.title}
               subtitle={item.subtitle}
               onPress={item.onPress}
-              rightElement={item.rightElement}
             />
           ))}
         </View>
@@ -221,11 +114,9 @@ export default function ProfileScreen() {
           {securitySettings.map((item, index) => (
             <ProfileItem
               key={index}
-              icon={item.icon}
               title={item.title}
               subtitle={item.subtitle}
               onPress={item.onPress}
-              rightElement={item.rightElement}
             />
           ))}
         </View>
@@ -235,11 +126,9 @@ export default function ProfileScreen() {
           {paymentSettings.map((item, index) => (
             <ProfileItem
               key={index}
-              icon={item.icon}
               title={item.title}
               subtitle={item.subtitle}
               onPress={item.onPress}
-              rightElement={item.rightElement}
             />
           ))}
         </View>
@@ -249,20 +138,15 @@ export default function ProfileScreen() {
           {supportSettings.map((item, index) => (
             <ProfileItem
               key={index}
-              icon={item.icon}
               title={item.title}
               subtitle={item.subtitle}
               onPress={item.onPress}
-              rightElement={item.rightElement}
             />
           ))}
         </View>
 
-        <TouchableOpacity 
-          style={styles.logoutButton}
-          onPress={handleLogout}
-        >
-          <LogOut size={24} color="#DB0011" />
+        <TouchableOpacity style={styles.logoutButton}>
+          <View style={styles.logoutIcon} />
           <Text style={styles.logoutText}>Log Out</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -296,6 +180,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 3,
+    overflow: 'hidden',
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
   },
   name: {
     fontSize: 24,
@@ -345,6 +235,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  iconPlaceholder: {
+    width: 24,
+    height: 24,
+    backgroundColor: '#172e73',
+    borderRadius: 4,
+  },
   profileItemContent: {
     flex: 1,
     marginLeft: 15,
@@ -360,6 +256,15 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 2,
   },
+  chevron: {
+    width: 8,
+    height: 8,
+    backgroundColor: '#666',
+    transform: [{ rotate: '45deg' }],
+    borderTopWidth: 2,
+    borderRightWidth: 2,
+    borderColor: '#666',
+  },
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -367,6 +272,12 @@ const styles = StyleSheet.create({
     padding: 20,
     marginTop: 20,
     marginBottom: 40,
+  },
+  logoutIcon: {
+    width: 24,
+    height: 24,
+    backgroundColor: '#DB0011',
+    borderRadius: 4,
   },
   logoutText: {
     marginLeft: 10,

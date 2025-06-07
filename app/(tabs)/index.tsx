@@ -1,133 +1,85 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { StyleSheet, View, Text, Image, ScrollView, TouchableOpacity, Platform, Dimensions, ActivityIndicator, FlatList } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, View, Text, Image, ScrollView, TouchableOpacity, Platform, Dimensions, FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { RefreshCw, Star, Bell, Calculator, Send, QrCode, Upload, Zap, CreditCard, ShoppingBag, Shield, User, Search } from 'lucide-react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Link, useRouter, useFocusEffect } from 'expo-router';
-import { FontAwesome5 } from '@expo/vector-icons';
-import { useUser } from '../context/UserContext';
-import { useTransactions, Transaction } from '../context/TransactionContext';
-import { format } from 'date-fns';
-import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
+import * as Location from 'expo-location';
 
 const { width } = Dimensions.get('window');
-const cardWidth = (width - 40) / 2 - 10; // 20 padding horizontal, 20 gap total for 2 cards
+const cardWidth = (width - 40) / 2 - 10;
 
-const ServiceItem = ({ Icon, label, onPress }) => (
+// Simple icon components
+const SearchIcon = ({ size = 24, color = "#172e73" }) => (
+  <View style={[styles.iconPlaceholder, { width: size, height: size, backgroundColor: color }]} />
+);
+
+const BellIcon = ({ size = 24, color = "#172e73" }) => (
+  <View style={[styles.iconPlaceholder, { width: size, height: size, backgroundColor: color, borderRadius: size / 2 }]} />
+);
+
+const ServiceItem = ({ label, onPress }) => (
   <TouchableOpacity style={styles.serviceCard} onPress={onPress}>
     <View style={styles.serviceIconContainer}>
-      <Icon size={24} color="#172e73" />
+      <View style={styles.serviceIcon} />
     </View>
     <Text style={styles.serviceLabel}>{label}</Text>
   </TouchableOpacity>
 );
 
-const TransactionItem = ({ transaction }: { transaction: Transaction }) => {
-  const getTransactionIcon = () => {
-    switch (transaction.type) {
-      case 'payment':
-        return require('../../assets/expense-amazon.svg');
-      case 'transfer':
-        return require('../../assets/avatar-1.svg');
-      case 'recharge':
-        return require('../../assets/expense-paytm.svg');
-      default:
-        return require('../../assets/avatar.svg');
-    }
-  };
-
-  return (
-    <View style={styles.transactionItem}>
-      <View style={styles.transactionAvatarPlaceholder}>
-        <Image source={getTransactionIcon()} style={styles.transactionAvatarImage} />
-      </View>
-      <View style={styles.transactionDetails}>
-        <Text style={styles.transactionName}>{transaction.recipient}</Text>
-        <Text style={styles.transactionDescription}>
-          {format(transaction.timestamp, 'dd MMM')} • {transaction.description}
-        </Text>
-      </View>
-      <Text 
-        style={[
-          styles.transactionAmount, 
-          { color: transaction.status === 'success' ? '#17C261' : '#DB0011' }
-        ]}
-      >
-        {transaction.status === 'success' ? '+' : '-'}₹{transaction.amount}
-      </Text>
-    </View>
-  );
-};
-
-const OfferCard = ({ title, description, color, illustration, onPress }) => (
+const OfferCard = ({ title, description, color, onPress }) => (
   <TouchableOpacity style={[styles.offerCard, { backgroundColor: color }]} onPress={onPress}>
     <View style={styles.offerTextContainer}>
       <Text style={styles.offerTitle}>{title}</Text>
       {description && <Text style={styles.offerDescription}>{description}</Text>}
     </View>
-    <Image
-      source={illustration}
-      style={styles.offerIllustration}
-      resizeMode="contain"
-    />
+    <View style={styles.offerIllustration} />
   </TouchableOpacity>
 );
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { userData } = useUser();
-  const { getRecentTransactions } = useTransactions();
-  const fullName = `${userData.firstName} ${userData.lastName}`.trim() || 'User';
-  const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
-  const [loadingTransactions, setLoadingTransactions] = useState(true);
+  const [location, setLocation] = useState<string>('');
 
-  const fetchRecentTransactions = useCallback(async () => {
-    setLoadingTransactions(true);
-    try {
-      const transactions = getRecentTransactions(5); // Get 5 most recent transactions
-      setRecentTransactions(transactions);
-    } catch (error) {
-      console.error('Error fetching transactions:', error);
-    } finally {
-      setLoadingTransactions(false);
-    }
-  }, [getRecentTransactions]);
+  useEffect(() => {
+    (async () => {
+      if (Platform.OS !== 'web') {
+        let { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          return;
+        }
 
-  useFocusEffect(
-    useCallback(() => {
-      fetchRecentTransactions();
-    }, [fetchRecentTransactions])
-  );
+        let location = await Location.getCurrentPositionAsync({});
+        // You can use reverse geocoding here to get city name
+        setLocation('Mumbai'); // Placeholder
+      }
+    })();
+  }, []);
 
   const serviceCategories = [
     {
       title: 'Money Transfer',
-      icon: (color) => <FontAwesome5 name="tags" size={20} color={color} />,
       items: [
-        { id: 1, label: 'Scan & Pay', Icon: () => <MaterialCommunityIcons name="qrcode-scan" size={24} color="#172e73" />, route: '/scan' },
-        { id: 2, label: 'To Mobile', Icon: () => <MaterialCommunityIcons name="cellphone" size={24} color="#172e73" />, route: '/to-mobile' },
-        { id: 3, label: 'To Bank Account', Icon: () => <MaterialCommunityIcons name="bank" size={24} color="#172e73" />, route: '/to-bank-account' },
-        { id: 4, label: 'Balance & History', Icon: () => <MaterialCommunityIcons name="history" size={24} color="#172e73" />, route: '/wallet' },
+        { id: 1, label: 'Scan & Pay', route: '/scan' },
+        { id: 2, label: 'To Mobile', route: '/to-mobile' },
+        { id: 3, label: 'To Bank Account', route: '/to-bank-account' },
+        { id: 4, label: 'Balance & History', route: '/wallet' },
       ],
     },
     {
       title: 'Recharges & Bill Payments',
-      icon: (color) => <FontAwesome5 name="tags" size={20} color={color} />,
       items: [
-        { id: 5, label: 'Electricity Bill', Icon: () => <MaterialCommunityIcons name="flash" size={24} color="#172e73" />, route: '/electricity-bill' },
-        { id: 6, label: 'Mobile Recharge', Icon: () => <MaterialCommunityIcons name="cellphone-wireless" size={24} color="#172e73" />, route: '/mobile-recharge' },
-        { id: 7, label: 'Fastag Recharge', Icon: () => <MaterialCommunityIcons name="road" size={24} color="#172e73" />, route: '/fastag-recharge' },
-        { id: 8, label: 'DTH Payments', Icon: () => <MaterialCommunityIcons name="satellite" size={24} color="#172e73" />, route: '/dth-payments' },
+        { id: 5, label: 'Electricity Bill', route: '/electricity-bill' },
+        { id: 6, label: 'Mobile Recharge', route: '/mobile-recharge' },
+        { id: 7, label: 'Fastag Recharge', route: '/fastag-recharge' },
+        { id: 8, label: 'DTH Payments', route: '/dth-payments' },
       ],
     },
     {
       title: 'Loans & Investments',
-      icon: (color) => <FontAwesome5 name="tags" size={20} color={color} />,
       items: [
-        { id: 9, label: 'Personal Loans', Icon: () => <MaterialCommunityIcons name="account" size={24} color="#172e73" />, route: '/personal-loans' },
-        { id: 10, label: 'Digital FDs', Icon: () => <MaterialCommunityIcons name="wallet" size={24} color="#172e73" />, route: '/digital-fds' },
-        { id: 11, label: 'Insurance', Icon: () => <MaterialCommunityIcons name="shield-check" size={24} color="#172e73" />, route: '/insurance' },
-        { id: 12, label: 'Gold Loans', Icon: () => <MaterialCommunityIcons name="gold" size={24} color="#172e73" />, route: '/gold-loans' },
+        { id: 9, label: 'Personal Loans', route: '/personal-loans' },
+        { id: 10, label: 'Digital FDs', route: '/digital-fds' },
+        { id: 11, label: 'Insurance', route: '/insurance' },
+        { id: 12, label: 'Gold Loans', route: '/gold-loans' },
       ],
     },
   ];
@@ -138,7 +90,6 @@ export default function HomeScreen() {
       title: 'Refer & Win',
       description: 'Exciting Rewards!',
       color: '#ff8a00',
-      illustration: require('../../assets/discount-bag-1.png'),
       route: '/refer-win'
     },
     {
@@ -146,7 +97,6 @@ export default function HomeScreen() {
       title: 'Get Instant',
       description: 'Personal Loans',
       color: '#ff4d4d',
-      illustration: require('../../assets/calculator-money-13794296-1.png'),
       route: '/personal-loans'
     },
     {
@@ -154,7 +104,6 @@ export default function HomeScreen() {
       title: 'Instant Gold',
       description: 'Loan Offers!',
       color: '#8e44ad',
-      illustration: require('../../assets/alms-1.png'),
       route: '/gold-loans'
     },
     {
@@ -162,7 +111,6 @@ export default function HomeScreen() {
       title: 'Exciting Offers',
       description: 'on Digital FDs',
       color: '#3498db',
-      illustration: require('../../assets/credit-card-1.png'),
       route: '/digital-fds'
     },
   ];
@@ -176,33 +124,30 @@ export default function HomeScreen() {
             onPress={() => router.push('/profile')}
           >
             <Image
-              source={require('../../assets/Avatar.png')}
+              source={{ uri: 'https://images.pexels.com/photos/927022/pexels-photo-927022.jpeg?auto=compress&cs=tinysrgb&w=100' }}
               style={styles.avatarImage}
             />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => router.push('/profile/personal-info')}>
-            <View style={styles.welcomeInfo}>
-              <Text style={styles.welcomeText}>Welcome Back!</Text>
-              <Text style={styles.userName}>{fullName}</Text>
-            </View>
-          </TouchableOpacity>
+          <View style={styles.welcomeInfo}>
+            <Text style={styles.welcomeText}>Welcome Back!</Text>
+            <Text style={styles.userName}>John Doe</Text>
+            {location && <Text style={styles.locationText}>📍 {location}</Text>}
+          </View>
           <View style={styles.headerIcons}>
-            <TouchableOpacity 
-              style={styles.iconButton}
-              onPress={() => router.push('/search')}
-            >
-              <Search size={24} color="#172e73" />
+            <TouchableOpacity style={styles.iconButton}>
+              <SearchIcon size={24} color="#172e73" />
             </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.iconButton}
-              onPress={() => router.push('/notifications')}
-            >
-              <Bell size={24} color="#172e73" />
+            <TouchableOpacity style={styles.iconButton}>
+              <BellIcon size={24} color="#172e73" />
             </TouchableOpacity>
           </View>
         </View>
         <View style={styles.logoSection}>
-          <Image source={require('../../assets/frenzopay-logo.png')} style={styles.logoImage} resizeMode="contain" />
+          <Image 
+            source={{ uri: 'https://images.pexels.com/photos/6801648/pexels-photo-6801648.jpeg?auto=compress&cs=tinysrgb&w=140' }} 
+            style={styles.logoImage} 
+            resizeMode="contain" 
+          />
         </View>
       </View>
 
@@ -212,12 +157,12 @@ export default function HomeScreen() {
             <Text style={styles.promoGreeting}>Hello from FrenzoPay!</Text>
             <Text style={styles.promoTitle}>Pay Credit Card Bills</Text>
             <Text style={styles.promoTitle}>& Get Instant Cashback!</Text>
-            <TouchableOpacity style={styles.payNowButton} onPress={() => router.push('/creditcard-payment')}>
+            <TouchableOpacity style={styles.payNowButton}>
               <Text style={styles.payNowText}>Pay Now</Text>
             </TouchableOpacity>
           </View>
           <Image
-            source={require('../../assets/personwithphone.png')}
+            source={{ uri: 'https://images.pexels.com/photos/4386431/pexels-photo-4386431.jpeg?auto=compress&cs=tinysrgb&w=100' }}
             style={styles.promoIllustration}
             resizeMode="contain"
           />
@@ -225,18 +170,17 @@ export default function HomeScreen() {
 
         {serviceCategories.map((category) => (
           <View key={category.title} style={styles.categoryContainer}>
-            <LinearGradient
-              colors={['#F07103', '#172E73']}
-              start={{ x: 0, y: 0.5 }}
-              end={{ x: 1, y: 0.5 }}
-              style={styles.categoryHeaderGradient}
-            >
-              {category.icon('white')}
+            <View style={styles.categoryHeaderGradient}>
+              <View style={styles.categoryIcon} />
               <Text style={styles.categoryTitleGradient}>{category.title}</Text>
-            </LinearGradient>
+            </View>
             <View style={styles.servicesGrid}>
               {category.items.map((item) => (
-                <ServiceItem key={item.id} Icon={item.Icon} label={item.label} onPress={() => router.push(item.route)} />
+                <ServiceItem 
+                  key={item.id} 
+                  label={item.label} 
+                  onPress={() => console.log(`Navigate to ${item.route}`)} 
+                />
               ))}
             </View>
           </View>
@@ -249,37 +193,11 @@ export default function HomeScreen() {
               title={offer.title}
               description={offer.description}
               color={offer.color}
-              illustration={offer.illustration}
-              onPress={() => router.push(offer.route)}
+              onPress={() => console.log(`Navigate to ${offer.route}`)}
             />
           ))}
         </View>
-
-        <View style={styles.transactionsSection}>
-          <View style={styles.transactionsHeader}>
-            <MaterialCommunityIcons name="tag" size={20} color="#172e73" />
-            <Text style={styles.transactionsTitle}>Recent Transactions</Text>
-          </View>
-          {loadingTransactions ? (
-            <ActivityIndicator size="large" color="#172e73" />
-          ) : recentTransactions.length > 0 ? (
-            <FlatList
-              data={recentTransactions}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => <TransactionItem transaction={item} />}
-              showsVerticalScrollIndicator={false}
-              scrollEnabled={false}
-            />
-          ) : (
-            <Text style={styles.noTransactionsText}>No recent transactions</Text>
-          )}
-        </View>
       </ScrollView>
-
-      {/* <TouchableOpacity style={styles.scanQrButton} onPress={() => router.push('/scan')}>
-        <Image source={require('../../assets/scan-button.png')} style={styles.scanQrImage} />
-        <Text style={styles.scanQrButtonText}>Scan any QR</Text>
-      </TouchableOpacity> */}
     </SafeAreaView>
   );
 }
@@ -340,6 +258,11 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontFamily: 'Inter-Bold',
   },
+  locationText: {
+    color: '#666666',
+    fontSize: 12,
+    fontFamily: 'Inter-Regular',
+  },
   headerIcons: {
     flexDirection: 'row',
     gap: 15,
@@ -351,6 +274,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8f9fa',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  iconPlaceholder: {
+    borderRadius: 2,
   },
   logoSection: {
     flexDirection: 'row',
@@ -366,12 +292,6 @@ const styles = StyleSheet.create({
     width: 140,
     height: 50,
     resizeMode: 'contain',
-  },
-  logoImagePlaceholder: {
-     width: 40,
-     height: 40,
-     backgroundColor: 'gray',
-     borderRadius: 20,
   },
   content: {
     flex: 1,
@@ -424,14 +344,9 @@ const styles = StyleSheet.create({
   categoryContainer: {
     backgroundColor: '#fff',
     borderRadius: 15,
-    padding: 15,
+    padding: 0,
     marginBottom: 20,
     overflow: 'hidden',
-  },
-  categoryHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
   },
   categoryHeaderGradient: {
     flexDirection: 'row',
@@ -439,14 +354,15 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     paddingHorizontal: 20,
     gap: 7,
+    backgroundColor: '#172e73',
     borderTopLeftRadius: 15,
     borderTopRightRadius: 15,
   },
-  categoryTitle: {
-    fontSize: 16,
-    fontFamily: 'Inter-Bold',
-    marginLeft: 10,
-    color: '#172e73'
+  categoryIcon: {
+    width: 20,
+    height: 20,
+    backgroundColor: 'white',
+    borderRadius: 4,
   },
   categoryTitleGradient: {
     fontSize: 16,
@@ -457,9 +373,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    paddingHorizontal: 0,
+    paddingHorizontal: 15,
+    paddingVertical: 15,
   },
-   serviceCard: {
+  serviceCard: {
     width: '23%',
     backgroundColor: '#EEF7FB',
     borderRadius: 10,
@@ -474,6 +391,12 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  serviceIcon: {
+    width: 24,
+    height: 24,
+    backgroundColor: '#172e73',
+    borderRadius: 4,
   },
   serviceLabel: {
     fontSize: 10,
@@ -514,96 +437,8 @@ const styles = StyleSheet.create({
   offerIllustration: {
     width: 60,
     height: 60,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 30,
     alignSelf: 'flex-end',
-  },
-  transactionsSection: {
-    backgroundColor: '#EEF7FB',
-    borderRadius: 15,
-    padding: 15,
-    marginBottom: 20,
-  },
-   transactionsHeader: {
-     flexDirection: 'row',
-     alignItems: 'center',
-     marginBottom: 15,
-   },
-  transactionsTitle: {
-    fontSize: 14,
-    fontFamily: 'Inter-Bold',
-    marginBottom: 20,
-    marginLeft: 10,
-    color: '#172e73'
-  },
-   noTransactionsText: {
-     fontSize: 14,
-     fontFamily: 'Inter-Regular',
-     marginLeft: 10,
-     color: '#172e73'
-   },
-  transactionItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-   transactionAvatarPlaceholder: {
-     width: 40,
-     height: 40,
-     borderRadius: 20,
-     backgroundColor: '#ccc',
-     justifyContent: 'center',
-     alignItems: 'center',
-     marginRight: 10,
-     overflow: 'hidden'
-   },
-   transactionAvatarImage: {
-     width: '100%',
-     height: '100%',
-   },
-  transactionDetails: {
-    flex: 1,
-  },
-  transactionName: {
-    fontSize: 14,
-    marginBottom: 2,
-    fontFamily: 'Inter-Regular',
-    color: '#172e73'
-  },
-  transactionDescription: {
-    fontSize: 12,
-    color: 'rgba(0, 0, 0, 0.6)',
-    fontFamily: 'Inter-Regular',
-  },
-  transactionAmount: {
-    fontSize: 14,
-    fontFamily: 'Inter-Bold',
-  },
-   transactionHistoryButton: {
-     marginTop: 10,
-     alignItems: 'flex-start',
-   },
-  transactionHistoryText: {
-    color: '#172e73',
-    fontSize: 14,
-    fontFamily: 'Inter-Bold',
-  },
-  scanQrButton: {
-    backgroundColor: '#ff7043',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 15,
-    margin: 20,
-    borderRadius: 15,
-  },
-  scanQrImage: {
-    width: 24,
-    height: 24,
-    tintColor: 'white',
-  },
-  scanQrButtonText: {
-    color: 'white',
-    fontSize: 18,
-    fontFamily: 'Inter-Bold',
-    marginLeft: 10,
   },
 });
