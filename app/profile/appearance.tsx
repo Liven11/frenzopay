@@ -1,13 +1,49 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, Moon, Sun } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
-import { useTheme } from '../context/ThemeContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function AppearanceScreen() {
   const router = useRouter();
-  const { isDarkMode, toggleTheme, colors } = useTheme();
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  useEffect(() => {
+    loadTheme();
+  }, []);
+
+  const loadTheme = async () => {
+    try {
+      const savedTheme = await AsyncStorage.getItem('theme');
+      if (savedTheme) {
+        setIsDarkMode(savedTheme === 'dark');
+      }
+    } catch (error) {
+      console.error('Error loading theme:', error);
+    }
+  };
+
+  const toggleTheme = async () => {
+    const newTheme = !isDarkMode;
+    setIsDarkMode(newTheme);
+    try {
+      await AsyncStorage.setItem('theme', newTheme ? 'dark' : 'light');
+    } catch (error) {
+      console.error('Error saving theme:', error);
+    }
+  };
+
+  const colors = {
+    background: isDarkMode ? '#1a1a1a' : '#ffffff',
+    text: isDarkMode ? '#ffffff' : '#172e73',
+    textSecondary: isDarkMode ? '#999999' : '#666666',
+    card: isDarkMode ? '#2a2a2a' : '#f8f9fa',
+    border: isDarkMode ? '#333333' : '#eeeeee',
+    primary: isDarkMode ? '#4a6bff' : '#172e73',
+    switchTrack: isDarkMode ? '#172e73' : '#e0e0e0',
+    switchThumb: '#ffffff',
+  };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -123,4 +159,4 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Regular',
     lineHeight: 20,
   },
-}); 
+});

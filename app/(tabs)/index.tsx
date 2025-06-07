@@ -8,7 +8,6 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { useUser } from '../context/UserContext';
 import { useTransactions, Transaction } from '../context/TransactionContext';
 import { format } from 'date-fns';
-import { LinearGradient } from 'expo-linear-gradient';
 
 const { width } = Dimensions.get('window');
 const cardWidth = (width - 40) / 2 - 10; // 20 padding horizontal, 20 gap total for 2 cards
@@ -225,15 +224,10 @@ export default function HomeScreen() {
 
         {serviceCategories.map((category) => (
           <View key={category.title} style={styles.categoryContainer}>
-            <LinearGradient
-              colors={['#F07103', '#172E73']}
-              start={{ x: 0, y: 0.5 }}
-              end={{ x: 1, y: 0.5 }}
-              style={styles.categoryHeaderGradient}
-            >
+            <View style={styles.categoryHeaderGradient}>
               {category.icon('white')}
               <Text style={styles.categoryTitleGradient}>{category.title}</Text>
-            </LinearGradient>
+            </View>
             <View style={styles.servicesGrid}>
               {category.items.map((item) => (
                 <ServiceItem key={item.id} Icon={item.Icon} label={item.label} onPress={() => router.push(item.route)} />
@@ -275,11 +269,6 @@ export default function HomeScreen() {
           )}
         </View>
       </ScrollView>
-
-      {/* <TouchableOpacity style={styles.scanQrButton} onPress={() => router.push('/scan')}>
-        <Image source={require('../../assets/scan-button.png')} style={styles.scanQrImage} />
-        <Text style={styles.scanQrButtonText}>Scan any QR</Text>
-      </TouchableOpacity> */}
     </SafeAreaView>
   );
 }
@@ -441,6 +430,7 @@ const styles = StyleSheet.create({
     gap: 7,
     borderTopLeftRadius: 15,
     borderTopRightRadius: 15,
+    backgroundColor: '#172e73',
   },
   categoryTitle: {
     fontSize: 16,

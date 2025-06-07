@@ -3,7 +3,6 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts, Inter_400Regular, Inter_700Bold } from '@expo-google-fonts/inter';
-import { ThemeProvider, DarkTheme, DefaultTheme } from '@react-navigation/native';
 import { useColorScheme, AppState, AppStateStatus } from 'react-native';
 import UserProvider from './context/UserContext';
 import { TransactionProvider } from './context/TransactionContext';
@@ -150,10 +149,8 @@ export default function RootLayout() {
         <UserProvider>
           <TransactionProvider>
             <WalletProvider>
-              <ThemeProvider value={colorScheme === 'light' ? DarkTheme : DefaultTheme}>
-                <RootLayoutNav />
-                <StatusBar style="light" />
-              </ThemeProvider>
+              <RootLayoutNav />
+              <StatusBar style="light" />
             </WalletProvider>
           </TransactionProvider>
         </UserProvider>
