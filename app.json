@@ -4,11 +4,11 @@
     "slug": "frenzopay",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/frenzopay-logo.png",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "scheme": "frenzopay",
     "splash": {
-      "image": "./assets/frenzopay-logo.png",
+      "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#172e73"
     },
@@ -25,7 +25,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/frenzopay-logo.png",
+        "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#172e73"
       },
       "permissions": [
@@ -40,17 +40,21 @@
         "android.permission.READ_CONTACTS",
         "android.permission.WRITE_CONTACTS"
       ],
-      "package": "com.livedangi0.frenzopay"
+      "package": "com.frenzopay.app"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/favicon.png"
     },
     "plugins": [
       "expo-camera",
       "expo-location",
-      "expo-contacts"
+      "expo-contacts",
+      "expo-router"
     ],
-    "extra": {
-      "eas": {
-        "projectId": "10afed93-a72b-48dc-b0da-aaa52aaa65da"
-      }
+    "experiments": {
+      "typedRoutes": true
     }
   }
 }

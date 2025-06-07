@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, Image, ScrollView, TouchableOpacity, Platform, Dimensions, FlatList } from 'react-native';
+import { StyleSheet, View, Text, Image, ScrollView, TouchableOpacity, Platform, Dimensions, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const { width } = Dimensions.get('window');
 const cardWidth = (width - 40) / 2 - 10;
@@ -42,17 +43,31 @@ export default function HomeScreen() {
   useEffect(() => {
     (async () => {
       if (Platform.OS !== 'web') {
-        let { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
-          return;
-        }
+        try {
+          let { status } = await Location.requestForegroundPermissionsAsync();
+          if (status !== 'granted') {
+            console.log('Permission to access location was denied');
+            return;
+          }
 
-        let location = await Location.getCurrentPositionAsync({});
-        // You can use reverse geocoding here to get city name
-        setLocation('Mumbai'); // Placeholder
+          let location = await Location.getCurrentPositionAsync({});
+          // You can use reverse geocoding here to get city name
+          setLocation('Mumbai'); // Placeholder
+        } catch (error) {
+          console.log('Error getting location:', error);
+        }
       }
     })();
   }, []);
+
+  const handleServicePress = (route: string, label: string) => {
+    if (Platform.OS === 'web') {
+      Alert.alert('Feature Not Available', `${label} is not available on web. Please use the mobile app.`);
+    } else {
+      // Navigate to the route
+      console.log(`Navigate to ${route}`);
+    }
+  };
 
   const serviceCategories = [
     {
@@ -170,16 +185,21 @@ export default function HomeScreen() {
 
         {serviceCategories.map((category) => (
           <View key={category.title} style={styles.categoryContainer}>
-            <View style={styles.categoryHeaderGradient}>
+            <LinearGradient
+              colors={['#F07103', '#172E73']}
+              start={{ x: 0, y: 0.5 }}
+              end={{ x: 1, y: 0.5 }}
+              style={styles.categoryHeaderGradient}
+            >
               <View style={styles.categoryIcon} />
               <Text style={styles.categoryTitleGradient}>{category.title}</Text>
-            </View>
+            </LinearGradient>
             <View style={styles.servicesGrid}>
               {category.items.map((item) => (
                 <ServiceItem 
                   key={item.id} 
                   label={item.label} 
-                  onPress={() => console.log(`Navigate to ${item.route}`)} 
+                  onPress={() => handleServicePress(item.route, item.label)} 
                 />
               ))}
             </View>
@@ -193,9 +213,19 @@ export default function HomeScreen() {
               title={offer.title}
               description={offer.description}
               color={offer.color}
-              onPress={() => console.log(`Navigate to ${offer.route}`)}
+              onPress={() => handleServicePress(offer.route, offer.title)}
             />
           ))}
+        </View>
+
+        <View style={styles.transactionsSection}>
+          <View style={styles.transactionsHeader}>
+            <View style={styles.categoryIcon} />
+            <Text style={styles.transactionsTitle}>Recent Transactions</Text>
+          </View>
+          <View style={styles.noTransactionsContainer}>
+            <Text style={styles.noTransactionsText}>No recent transactions</Text>
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -354,7 +384,6 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     paddingHorizontal: 20,
     gap: 7,
-    backgroundColor: '#172e73',
     borderTopLeftRadius: 15,
     borderTopRightRadius: 15,
   },
@@ -440,5 +469,31 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.2)',
     borderRadius: 30,
     alignSelf: 'flex-end',
+  },
+  transactionsSection: {
+    backgroundColor: '#EEF7FB',
+    borderRadius: 15,
+    padding: 15,
+    marginBottom: 20,
+  },
+  transactionsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  transactionsTitle: {
+    fontSize: 14,
+    fontFamily: 'Inter-Bold',
+    marginLeft: 10,
+    color: '#172e73'
+  },
+  noTransactionsContainer: {
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  noTransactionsText: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    color: '#172e73'
   },
 });
