@@ -102,32 +102,32 @@ export default function HomeScreen() {
   const serviceCategories = [
     {
       title: 'Money Transfer',
-      icon: (color) => <FontAwesome5 name="tags" size={20} color={color} />,
+      icon: (color) => <FontAwesome5 name="tags\" size={20} color={color} />,
       items: [
-        { id: 1, label: 'Scan & Pay', Icon: () => <MaterialCommunityIcons name="qrcode-scan" size={24} color="#172e73" />, route: '/scan' },
-        { id: 2, label: 'To Mobile', Icon: () => <MaterialCommunityIcons name="cellphone" size={24} color="#172e73" />, route: '/to-mobile' },
-        { id: 3, label: 'To Bank Account', Icon: () => <MaterialCommunityIcons name="bank" size={24} color="#172e73" />, route: '/to-bank-account' },
-        { id: 4, label: 'Balance & History', Icon: () => <MaterialCommunityIcons name="history" size={24} color="#172e73" />, route: '/wallet' },
+        { id: 1, label: 'Scan & Pay', Icon: () => <MaterialCommunityIcons name="qrcode-scan\" size={24} color="#172e73" />, route: '/scan' },
+        { id: 2, label: 'To Mobile', Icon: () => <MaterialCommunityIcons name="cellphone\" size={24} color="#172e73" />, route: '/to-mobile' },
+        { id: 3, label: 'To Bank Account', Icon: () => <MaterialCommunityIcons name="bank\" size={24} color="#172e73" />, route: '/to-bank-account' },
+        { id: 4, label: 'Balance & History', Icon: () => <MaterialCommunityIcons name="history\" size={24} color="#172e73" />, route: '/wallet' },
       ],
     },
     {
       title: 'Recharges & Bill Payments',
-      icon: (color) => <FontAwesome5 name="tags" size={20} color={color} />,
+      icon: (color) => <FontAwesome5 name="tags\" size={20} color={color} />,
       items: [
-        { id: 5, label: 'Electricity Bill', Icon: () => <MaterialCommunityIcons name="flash" size={24} color="#172e73" />, route: '/electricity-bill' },
-        { id: 6, label: 'Mobile Recharge', Icon: () => <MaterialCommunityIcons name="cellphone-wireless" size={24} color="#172e73" />, route: '/mobile-recharge' },
-        { id: 7, label: 'Fastag Recharge', Icon: () => <MaterialCommunityIcons name="road" size={24} color="#172e73" />, route: '/fastag-recharge' },
-        { id: 8, label: 'DTH Payments', Icon: () => <MaterialCommunityIcons name="satellite" size={24} color="#172e73" />, route: '/dth-payments' },
+        { id: 5, label: 'Electricity Bill', Icon: () => <MaterialCommunityIcons name="flash\" size={24} color="#172e73" />, route: '/electricity-bill' },
+        { id: 6, label: 'Mobile Recharge', Icon: () => <MaterialCommunityIcons name="cellphone-wireless\" size={24} color="#172e73" />, route: '/mobile-recharge' },
+        { id: 7, label: 'Fastag Recharge', Icon: () => <MaterialCommunityIcons name="road\" size={24} color="#172e73" />, route: '/fastag-recharge' },
+        { id: 8, label: 'DTH Payments', Icon: () => <MaterialCommunityIcons name="satellite\" size={24} color="#172e73" />, route: '/dth-payments' },
       ],
     },
     {
       title: 'Loans & Investments',
-      icon: (color) => <FontAwesome5 name="tags" size={20} color={color} />,
+      icon: (color) => <FontAwesome5 name="tags\" size={20} color={color} />,
       items: [
-        { id: 9, label: 'Personal Loans', Icon: () => <MaterialCommunityIcons name="account" size={24} color="#172e73" />, route: '/personal-loans' },
-        { id: 10, label: 'Digital FDs', Icon: () => <MaterialCommunityIcons name="wallet" size={24} color="#172e73" />, route: '/digital-fds' },
-        { id: 11, label: 'Insurance', Icon: () => <MaterialCommunityIcons name="shield-check" size={24} color="#172e73" />, route: '/insurance' },
-        { id: 12, label: 'Gold Loans', Icon: () => <MaterialCommunityIcons name="gold" size={24} color="#172e73" />, route: '/gold-loans' },
+        { id: 9, label: 'Personal Loans', Icon: () => <MaterialCommunityIcons name="account\" size={24} color="#172e73" />, route: '/personal-loans' },
+        { id: 10, label: 'Digital FDs', Icon: () => <MaterialCommunityIcons name="wallet\" size={24} color="#172e73" />, route: '/digital-fds' },
+        { id: 11, label: 'Insurance', Icon: () => <MaterialCommunityIcons name="shield-check\" size={24} color="#172e73" />, route: '/insurance' },
+        { id: 12, label: 'Gold Loans', Icon: () => <MaterialCommunityIcons name="gold\" size={24} color="#172e73" />, route: '/gold-loans' },
       ],
     },
   ];
