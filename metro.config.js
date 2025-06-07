@@ -8,4 +8,15 @@ config.resolver.assetExts.push('env');
 // Add support for web
 config.resolver.platforms = ['ios', 'android', 'native', 'web'];
 
+// Web-specific configurations
+config.resolver.alias = {
+  'react-native$': 'react-native-web',
+};
+
+// Transformer configuration for web compatibility
+config.transformer = {
+  ...config.transformer,
+  babelTransformerPath: require.resolve('metro-react-native-babel-transformer'),
+};
+
 module.exports = config;
